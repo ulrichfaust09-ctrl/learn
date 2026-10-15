@@ -1,0 +1,3398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Box Brawlers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Cinzel:wght@600;800&family=Rubik:wght@400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0a0810;
+    --bg-panel:#181420;
+    --line:#3a2f4a;
+    --gold:#e8b04b;
+    --gold-bright:#ffd479;
+    --marquee:#ff7a5c;
+    --teamA:#4fc3d9;
+    --teamB:#e35b5b;
+    --teamA-glow:rgba(79,195,217,.45);
+    --teamB-glow:rgba(227,91,91,.45);
+    --text:#e9e2f5;
+    --dim:#9184ab;
+    --mono:'Space Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -6%, rgba(255,180,110,.10) 0%, transparent 60%),
+      radial-gradient(ellipse at 18% 15%, rgba(255,90,120,.07) 0%, transparent 45%),
+      radial-gradient(ellipse at 82% 85%, rgba(79,195,217,.06) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% -10%, #241a33 0%, var(--bg-deep) 62%);
+    color:var(--text);
+    font-family:'Rubik',sans-serif;
+    min-height:100vh;
+  }
+  body{
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  .marquee{
+    display:flex;justify-content:center;gap:9px;margin:0 auto 2px;
+    max-width:420px;
+  }
+  .marquee span{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--gold-bright);
+    box-shadow:0 0 8px 2px rgba(255,212,121,.75);
+    animation:bulbFlicker 2.6s ease-in-out infinite;
+  }
+  .marquee span:nth-child(3n+1){animation-delay:.3s;}
+  .marquee span:nth-child(3n+2){animation-delay:.9s;}
+  .marquee span:nth-child(4n){animation-delay:1.5s;}
+  @keyframes bulbFlicker{
+    0%,100%{opacity:1;}
+    45%{opacity:.35;box-shadow:0 0 3px 1px rgba(255,212,121,.4);}
+  }
+  h1{
+    font-family:'Cinzel',serif;
+    font-weight:800;
+    letter-spacing:4px;
+    font-size:2.35rem;
+    margin:0 0 4px 0;
+    background:linear-gradient(90deg,var(--gold),#fff2cc,var(--gold));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-align:center;
+    filter:drop-shadow(0 0 18px rgba(232,176,75,.35));
+  }
+  .subtitle{
+    text-align:center;color:var(--dim);margin-bottom:16px;font-size:.78rem;letter-spacing:2px;
+    text-transform:uppercase;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .subtitle::before,.subtitle::after{content:'';width:26px;height:1px;background:linear-gradient(90deg,transparent,var(--line));}
+  .subtitle::after{background:linear-gradient(90deg,var(--line),transparent);}
+  #app{
+    width:min(100vw, 1200px);
+    max-width:100vw;
+    height:100vh;
+    padding:22px;
+    display:flex;flex-direction:column;justify-content:center;
+  }
+
+  /* ---------- Setup screen ---------- */
+  #setup{
+    flex:1;
+    background:
+      radial-gradient(ellipse 520px 300px at 50% 8%, rgba(255,220,170,.14) 0%, transparent 60%),
+      linear-gradient(180deg, rgba(11,8,16,.66) 0%, rgba(11,8,16,.48) 45%, rgba(11,8,16,.74) 100%),
+      linear-gradient(160deg, #2b1240 0%, #6a1f52 24%, #b8355e 46%, #e35f4f 66%, #f5924a 82%, #ffc25c 100%);
+    border:1px solid rgba(232,176,75,.28);
+    border-radius:16px;
+    padding:26px 30px 30px;
+    box-shadow:0 24px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+    display:flex;flex-direction:column;justify-content:flex-start;
+    min-height:0;
+    overflow:hidden;
+    position:relative;
+  }
+  .pickRow{display:flex;gap:18px;align-items:stretch;justify-content:center;margin-bottom:10px;flex:1;min-height:0;max-height:calc(100vh - 180px);}
+  .pickCol{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;max-height:100%;}
+  .pickLabel{
+    font-family:'Cinzel',serif;font-weight:600;text-align:center;
+    letter-spacing:2px;font-size:.8rem;margin-bottom:10px;
+    text-shadow:0 0 12px currentColor;
+  }
+  .pickLabel.a{color:var(--teamA);}
+  .pickLabel.b{color:var(--teamB);}
+  .cardList{display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-right:4px;min-height:0;max-height:100%;
+    scrollbar-width:thin;scrollbar-color:rgba(232,176,75,.6) transparent;}
+  .modifierBox{
+    display:none;margin-top:8px;padding:10px;background:rgba(16,13,23,.88);border:1px solid var(--gold);
+    border-radius:10px;flex-shrink:0;max-height:126px;overflow-y:auto;
+    box-shadow:0 8px 22px rgba(0,0,0,.35);
+  }
+  .modifierBox.visible{display:block;}
+  .modifierTitle{font-family:var(--mono);font-size:.62rem;color:var(--gold);letter-spacing:2px;margin-bottom:6px;text-align:center;}
+  .modifierOption{display:flex;align-items:flex-start;gap:7px;color:var(--dim);font-size:.64rem;line-height:1.25;
+    margin:2px 0;padding:5px 6px;border-radius:6px;cursor:pointer;transition:background .12s;}
+  .modifierOption:hover{background:rgba(232,176,75,.08);}
+  .modifierOption input{accent-color:var(--gold);margin:1px 0 0;flex-shrink:0;}
+  .modifierOption b{color:var(--text);font-size:.68rem;}
+  .vsWrap{
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+    min-width:62px;
+  }
+  .charCard{
+    border:1.5px solid var(--line);
+    background:linear-gradient(160deg,#171220,#100d16);
+    border-radius:11px;
+    padding:8px 10px;
+    display:flex;align-items:center;gap:10px;
+    cursor:pointer;
+    transition:transform .14s ease-out, border-color .14s, box-shadow .14s, background .14s;
+    flex-shrink:0;
+    min-height:52px;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  .charCard:hover{transform:translateY(-2px) scale(1.01);border-color:var(--gold);box-shadow:0 8px 18px rgba(0,0,0,.4);}
+  .charCard.selA{border-color:var(--teamA);background:linear-gradient(160deg,#123038,#0e2328);box-shadow:0 0 0 1px var(--teamA) inset, 0 0 18px var(--teamA-glow);}
+  .charCard.selB{border-color:var(--teamB);background:linear-gradient(160deg,#331616,#280f10);box-shadow:0 0 0 1px var(--teamB) inset, 0 0 18px var(--teamB-glow);}
+  .charEmoji{
+    font-size:1.35rem;width:36px;height:36px;line-height:36px;text-align:center;flex-shrink:0;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.10), rgba(0,0,0,.25));
+    border-radius:50%;border:1px solid rgba(255,255,255,.08);
+  }
+  .charInfo{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;}
+  .charInfo b{display:block;font-size:.8rem;line-height:1.2;text-align:center;letter-spacing:.2px;}
+  .charInfo span{display:none;}
+  .vs{
+    font-family:'Cinzel',serif;font-weight:800;font-size:1.4rem;color:var(--gold);
+    align-self:center;padding:0 4px;
+    text-shadow:0 0 14px rgba(232,176,75,.5);
+  }
+  #startBtn{
+    width:52px;height:52px;border:none;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 35% 30%, #ffe6a8, var(--gold) 60%, #b8802c 100%);
+    color:#241708;cursor:pointer;
+    box-shadow:0 6px 18px rgba(232,176,75,.3), inset 0 2px 3px rgba(255,255,255,.4), inset 0 -3px 6px rgba(0,0,0,.25);
+    transition:transform .1s, box-shadow .1s, opacity .1s;
+    padding:0;flex-shrink:0;
+  }
+  #startBtn:disabled{opacity:.32;cursor:not-allowed;box-shadow:none;animation:none;}
+  #startBtn:not(:disabled){animation:bellPulse 2.2s ease-in-out infinite;}
+  #startBtn:not(:disabled):hover{transform:translateY(-1px) scale(1.05);box-shadow:0 8px 24px rgba(232,176,75,.5), inset 0 2px 3px rgba(255,255,255,.4);}
+  @keyframes bellPulse{
+    0%,100%{box-shadow:0 6px 18px rgba(232,176,75,.3), inset 0 2px 3px rgba(255,255,255,.4), inset 0 -3px 6px rgba(0,0,0,.25);}
+    50%{box-shadow:0 6px 26px rgba(232,176,75,.65), inset 0 2px 3px rgba(255,255,255,.4), inset 0 -3px 6px rgba(0,0,0,.25);}
+  }
+  #startBtn::before{
+    content:'';
+    width:0;height:0;
+    border-top:10px solid transparent;border-bottom:10px solid transparent;
+    border-left:16px solid #241708;
+    margin-left:4px;
+  }
+  .battleOptions{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;color:var(--dim);font-size:.72rem;letter-spacing:.4px;}
+  .battleOptions label{display:flex;align-items:center;gap:6px;text-transform:uppercase;font-size:.66rem;letter-spacing:1px;}
+  .battleOptions select{
+    background:#14101c;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 9px;
+    font-family:var(--mono);font-size:.72rem;cursor:pointer;
+    transition:border-color .12s;
+  }
+  .battleOptions select:hover,.battleOptions select:focus{border-color:var(--gold);outline:none;}
+
+  /* ---------- Arena screen ---------- */
+  #arenaScreen{display:none;position:relative;}
+  .hpPanel{display:flex;justify-content:space-between;gap:20px;margin-bottom:10px;}
+  .hpBox{
+    flex:1;background:linear-gradient(160deg,#1c1726,var(--bg-panel));
+    border:1px solid var(--line);border-radius:11px;padding:10px 14px;
+    position:relative;overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
+  }
+  .hpBox::before{content:'';position:absolute;top:0;bottom:0;left:0;width:3px;background:var(--teamA);box-shadow:0 0 12px var(--teamA-glow);}
+  .hpBox.right::before{left:auto;right:0;background:var(--teamB);box-shadow:0 0 12px var(--teamB-glow);}
+  .hpBox.right{text-align:right;}
+  .hpName{font-family:'Cinzel',serif;font-size:.95rem;font-weight:600;display:flex;align-items:center;gap:8px;letter-spacing:.4px;}
+  .hpBox.right .hpName{justify-content:flex-end;}
+  .hpBarOuter{height:13px;border-radius:7px;background:#1a1420;margin-top:7px;overflow:hidden;border:1px solid var(--line);
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.5);}
+  .hpBarInner{height:100%;transition:width .15s ease-out;position:relative;}
+  .hpBarInner::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.28),transparent 55%);}
+  .hpBarInner.a{background:linear-gradient(90deg,#2c8fa3,var(--teamA));box-shadow:0 0 10px var(--teamA-glow);}
+  .hpBarInner.b{background:linear-gradient(90deg,var(--teamB),#a33333);box-shadow:0 0 10px var(--teamB-glow);}
+  .hpSub{font-family:var(--mono);font-size:.68rem;color:var(--dim);margin-top:5px;letter-spacing:.3px;}
+
+  #canvasWrap{
+    position:relative;border-radius:6px;overflow:visible;
+    padding:16px 10px;
+  }
+  #canvasWrap .ringRope{
+    position:absolute;left:6px;right:6px;height:9px;z-index:1;pointer-events:none;
+    background:
+      repeating-linear-gradient(90deg, #d1493f 0 26px, #f4e6c9 26px 52px),
+      linear-gradient(180deg, rgba(255,255,255,.25), rgba(0,0,0,.25));
+    background-blend-mode:normal, multiply;
+    border-radius:5px;
+    box-shadow:0 2px 4px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.3);
+  }
+  #canvasWrap .ringRope.top{top:0;}
+  #canvasWrap .ringRope.bottom{bottom:0;}
+  #canvasWrap .turnbuckle{
+    position:absolute;width:18px;height:18px;z-index:2;pointer-events:none;
+    background:linear-gradient(160deg,#3a2f4a,#181420);
+    border:2px solid var(--gold);border-radius:4px;
+    box-shadow:0 3px 8px rgba(0,0,0,.5);
+  }
+  #canvasWrap .turnbuckle.tl{top:2px;left:2px;}
+  #canvasWrap .turnbuckle.tr{top:2px;right:2px;}
+  #canvasWrap .turnbuckle.bl{bottom:2px;left:2px;}
+  #canvasWrap .turnbuckle.br{bottom:2px;right:2px;}
+  #canvasInner{
+    position:relative;border-radius:10px;overflow:hidden;
+    border:2px solid var(--line);
+    box-shadow:0 24px 70px rgba(0,0,0,.6), inset 0 0 60px rgba(0,0,0,.5);
+  }
+  canvas{display:block;background:
+    radial-gradient(ellipse at 50% 38%, #241926 0%, #140c18 55%, #0d0812 100%);
+  }
+  #overlay{
+    position:absolute;inset:0;display:none;
+    align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(8,6,12,.78);backdrop-filter:blur(3px);
+    z-index:4;
+  }
+  #overlay h2{
+    font-family:'Cinzel',serif;font-size:2.2rem;margin:0 0 6px;
+    color:var(--gold);text-shadow:0 0 10px rgba(232,176,75,.8), 0 0 34px rgba(232,176,75,.4);
+    animation:overlayPop .35s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes overlayPop{
+    0%{transform:scale(.85);opacity:0;}
+    100%{transform:scale(1);opacity:1;}
+  }
+  #overlay p{color:var(--dim);margin:0 0 18px;font-family:var(--mono);font-size:.8rem;}
+  #rematchBtn,#changeBtn{
+    font-family:'Rubik',sans-serif;font-weight:600;
+    border:1px solid var(--gold);background:transparent;color:var(--gold);
+    padding:9px 22px;border-radius:8px;cursor:pointer;margin:0 6px;
+    transition:background .12s, transform .12s;
+  }
+  #rematchBtn{background:linear-gradient(180deg,#f0c766,var(--gold));color:#241708;border-color:transparent;}
+  #rematchBtn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(232,176,75,.35);}
+  #changeBtn:hover{background:rgba(232,176,75,.12);}
+  #pauseOverlay{
+    position:absolute;inset:0;display:none;
+    align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(8,6,12,.78);backdrop-filter:blur(3px);
+    z-index:2;
+  }
+  #pauseOverlay h2{
+    font-family:'Cinzel',serif;font-size:2rem;margin:0 0 6px;
+    color:var(--gold);text-shadow:0 0 20px rgba(232,176,75,.5);
+  }
+  #pauseOverlay p{color:var(--dim);margin:0 0 18px;}
+  #pauseOverlay button{
+    font-family:'Rubik',sans-serif;font-weight:600;
+    border:1px solid var(--gold);background:transparent;color:var(--gold);
+    padding:9px 22px;border-radius:8px;cursor:pointer;margin:0 6px;
+    transition:background .12s;
+  }
+  #pauseOverlay button:hover{background:rgba(232,176,75,.12);}
+
+  #log{
+    position:absolute;left:820px;top:78px;width:calc(100% - 820px);height:800px;
+    margin:0;background:linear-gradient(160deg,#181420,#120e1a);border:1px solid var(--line);
+    border-radius:10px;padding:10px 14px;overflow-y:auto;
+    font-family:var(--mono);font-size:.72rem;color:var(--dim);
+    box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 0 30px rgba(0,0,0,.3);
+    scrollbar-width:thin;scrollbar-color:rgba(232,176,75,.5) transparent;
+  }
+  #log div{padding:3px 0;border-bottom:1px dashed #241d30;}
+  #log div:last-child{border-bottom:none;}
+  #log .hl{color:var(--gold);}
+  #hoverTooltip{
+    position:fixed;z-index:50;pointer-events:none;
+    max-width:260px;
+    background:linear-gradient(160deg,#171220,#0f0c15);border:1px solid var(--gold);border-radius:10px;
+    padding:10px 12px;
+    box-shadow:0 14px 34px rgba(0,0,0,.6);
+    opacity:0;transform:translateY(4px);
+    transition:opacity .12s ease-out, transform .12s ease-out;
+  }
+  #hoverTooltip.visible{opacity:1;transform:translateY(0);}
+  #hoverTooltip .ttName{font-family:'Cinzel',serif;font-weight:600;color:var(--gold);font-size:.85rem;margin-bottom:4px;}
+  #hoverTooltip .ttDesc{color:var(--text);font-size:.72rem;line-height:1.35;}
+  #hoverTooltip .ttMods{margin-top:6px;padding-top:6px;border-top:1px dashed #241d30;}
+  #hoverTooltip .ttMod{font-size:.66rem;color:var(--dim);line-height:1.3;margin-top:3px;}
+  #hoverTooltip .ttMod b{color:var(--text);}
+
+  @media (max-width:850px){
+    #log{position:static;width:auto;height:96px;margin-top:12px;}
+  }
+
+  /* ---------- PIXEL MODE ---------- */
+  *,*::before,*::after{border-radius:0!important;}
+  body,button,select,input{font-family:'Silkscreen','Press Start 2P',monospace!important;}
+  h1,h2,.pickLabel,.hpName,.modifierTitle,#overlayTitle{font-family:'Press Start 2P',monospace!important;}
+  h1{font-size:1.5rem!important;letter-spacing:2px!important;filter:none!important;text-shadow:4px 4px 0 #5a3a10;}
+  .charCard,#setup,.modifierBox,button{box-shadow:4px 4px 0 rgba(0,0,0,.6)!important;}
+  .charCard:hover{transform:translate(-2px,-2px)!important;}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
+  .charEmoji,.hpName{image-rendering:pixelated;}
+  .marquee span{border-radius:0!important;box-shadow:none!important;}
+  #speedBar{display:flex;gap:8px;align-items:center;justify-content:center;margin:0 0 8px;font-size:.75rem;color:var(--dim);}
+  #speedBar button{background:#181420;color:var(--text);border:2px solid var(--line);padding:5px 12px;cursor:pointer;font-size:.75rem;}
+  #speedBar button.on{border-color:var(--gold);color:var(--gold-bright);}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="marquee"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <h1>BOX BRAWLERS</h1>
+  <div class="subtitle">pick two fighters</div>
+
+  <div id="setup">
+    <div class="pickRow">
+      <div class="pickCol">
+        <div class="pickLabel a">FIGHTER — BLUE CORNER</div>
+        <div class="cardList" id="listA"></div>
+        <div class="modifierBox" id="modsA"></div>
+      </div>
+      <div class="vsWrap">
+        <div class="vs">VS</div>
+        <button id="startBtn" aria-label="Start fight" disabled></button>
+      </div>
+      <div class="pickCol">
+        <div class="pickLabel b">FIGHTER — RED CORNER</div>
+        <div class="cardList" id="listB"></div>
+        <div class="modifierBox" id="modsB"></div>
+      </div>
+    </div>
+    <div class="battleOptions">
+      <label>Blue team <select id="countA"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label>Red team <select id="countB"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label>Mode <select id="modeSelect"><option value="standard">Standard</option><option value="timed">Timed · 20s</option></select></label>
+    </div>
+  </div>
+
+  <div id="arenaScreen">
+    <div class="hpPanel">
+      <div class="hpBox" id="hpBoxA">
+        <div class="hpName" id="hpNameA"></div>
+        <div class="hpBarOuter"><div class="hpBarInner a" id="hpBarA" style="width:100%"></div></div>
+        <div class="hpSub" id="hpSubA"></div>
+      </div>
+      <div class="hpBox right" id="hpBoxB">
+        <div class="hpName" id="hpNameB"></div>
+        <div class="hpBarOuter"><div class="hpBarInner b" id="hpBarB" style="width:100%"></div></div>
+        <div class="hpSub" id="hpSubB"></div>
+      </div>
+    </div>
+    <div id="modeTimer" style="display:none;text-align:center;color:var(--gold-bright);font-family:'Space Mono',monospace;font-weight:700;letter-spacing:3px;font-size:1.1rem;text-shadow:0 0 12px rgba(232,176,75,.5);margin:-4px 0 8px"></div>
+    <div id="speedBar">Speed:
+      <button data-s="1" class="on">1×</button><button data-s="2">2×</button><button data-s="4">4×</button>
+    </div>
+    <div id="canvasWrap">
+      <div class="ringRope top"></div>
+      <div class="ringRope bottom"></div>
+      <div class="turnbuckle tl"></div>
+      <div class="turnbuckle tr"></div>
+      <div class="turnbuckle bl"></div>
+      <div class="turnbuckle br"></div>
+      <div id="canvasInner">
+        <canvas id="c" width="800" height="800"></canvas>
+        <div id="overlay">
+          <h2 id="overlayTitle">Victory</h2>
+          <p id="overlaySub"></p>
+          <div>
+            <button id="rematchBtn">Rematch</button>
+            <button id="changeBtn">Change Fighters</button>
+          </div>
+        </div>
+        <div id="pauseOverlay" aria-label="Pause menu">
+          <h2>Paused</h2>
+          <p>Press Esc to resume</p>
+          <div>
+            <button id="resumeBtn">Resume</button>
+            <button id="pauseRematchBtn">Restart</button>
+            <button id="pauseChangeBtn">Change Fighters</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="log"></div>
+  </div>
+</div>
+<div id="hoverTooltip"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // Character definitions
+  // ---------------------------------------------------------------
+  const DEFS = {
+    blacksmith: {
+      key:'blacksmith', name:'The Blacksmith', emoji:'🔨', maxhp:1000,
+      damage:10, fireRate:1.2, meleeRange:84, nearRange:193,
+      forgeInterval:0.75, forgeGain:10,
+      modifiers:{
+        forgery:{name:'Forgery', desc:'+5 forge bonus damage, -20% forge cooldown'},
+        multitasking:{name:'Multitasking', desc:'Keeps forging while attacking'}
+      },
+      speed:170, r:54,
+      desc:'10 dmg / 1.2s. Forges a better blade when not near a foe: +10 dmg every 0.75s.'
+    },
+    angry: {
+      key:'angry', name:'Angry Guy', emoji:'😡', maxhp:1000,
+      damage:80, fireRate:1.2, projSpeed:430, projR:10,
+      rageDamageGain:2.56, rageKnockbackResist:0.02,
+      modifiers:{
+        pureRage:{name:'Pure Rage', desc:'Starts with 33% less HP, takes 33% less damage'},
+        anglings:{name:'Anglings', desc:'100 dmg main projectile, then 4 quick 25 dmg fingers'}
+      },
+      speed:190, r:52,
+      desc:'Fires a middle finger for 80 dmg every 1.2s. Every 1% HP lost adds ~2.56 dmg and 2% knockback resistance.'
+    },
+    exploding: {
+      key:'exploding', name:'Exploding Guy', emoji:'💣', maxhp:1000,
+      triggerTime:10, explosionDamage:1000000,
+      modifiers:{
+        tickingBomb:{name:'Ticking Bomb', desc:'Bomb timer is 1.5 seconds shorter'},
+        tickTock:{name:'Tick Tock', desc:'Starts the bomb immediately when the game starts'}
+      },
+      speed:150, r:52,
+      desc:'No normal attack. First hit arms a 10s bomb; when it goes off, it detonates for 1M damage and kills both fighters.'
+    },
+    gwnn: {
+      key:'gwnn', name:'Guy with no name', emoji:'🔫', maxhp:1000,
+      bulletDamage:35, bulletCount:6, burstDuration:0.4, reloadTime:2, bulletSpeed:850, bulletR:7,
+      speed:190, r:50,
+      modifiers:{
+        deadshot:{name:'Deadshot', desc:'Each hit keeps the enemy on GWNN\'s horizontal plane for 0.1s'},
+        gunslinger:{name:'Gunslinger', desc:'+6 bullets, +0.4s burst, +2s reload'}
+      },
+      desc:'Fights only left and right. Fires a rapid horizontal burst, then reloads.'
+    },
+    necromancer: {
+      key:'necromancer', name:'Necromancer Guy', emoji:'🧙', maxhp:1000,
+      skeletonInterval:1, skeletonHp:50, skeletonDamage:75, skeletonFireRate:1, maxSkeletons:2,
+      speed:140, r:50,
+      modifiers:{
+        liege:{name:'Liege', desc:'Spawns 2 skeletons per second; skeletons gain 50 HP and armor'},
+        protected:{name:'Protected', desc:'50% of Necromancer damage is spread across living skeletons'}
+      },
+      desc:'Summons skeletons from the edge of the map every second.'
+    },
+    skeleton: {
+      key:'skeleton', name:'Skeleton', emoji:'💀', maxhp:50,
+      damage:75, fireRate:1, meleeRange:68, speed:180, r:28,
+      selectable:false,
+      desc:'A summoned skeleton.'
+    },
+    woman: {
+      key:'woman', name:'Woman Guy', emoji:'💅', maxhp:1000,
+      nailDamage:100, nailFireRate:0.9, nailSpeed:520, nailR:10,
+      speed:175, r:50,
+      modifiers:{
+        selfCare:{name:'Self care', desc:'Successful nail polish hits heal 15 HP'},
+        skinCare:{name:'Skin care', desc:'Stacks last 1 second longer and misses do not remove them'}
+      },
+      desc:'Throws nail polish. Successful hits build temporary attack-speed stacks.'
+    },
+    fireworks: {
+      key:'fireworks', name:'Fireworks Guy', emoji:'🎆', maxhp:1000,
+      fireworkDamage:150, fireworkSpeed:480, fireworkR:10, fireworkAoe:157.5,
+      modifiers:{
+        sparks:{name:'Sparks!', desc:'70% less firework damage, two fireworks per wall bounce, 200% more knockback'},
+        july4:{name:'July 4th!', desc:'Explosions grant bonus speed, capped at 200%'}
+      },
+      speed:180, r:50,
+      desc:'Bounces around and launches fireworks from every wall bounce.'
+    },
+    chef: {
+      key:'chef', name:'Chef Guy', emoji:'👨‍🍳', maxhp:1000,
+      knifeDamage:200, knifeFireRate:0.9, knifeSpeed:520, knifeR:9, maxKnives:2,
+      modifiers:{
+        cook:{name:'Cook', desc:'Successful hits heal 50 HP; collecting stuck knives heals 10 HP'},
+        preciseCuts:{name:'Precise Cuts', desc:'Knives can stick to enemies for damage over time and can be collected early'}
+      },
+      speed:175, r:50,
+      desc:'Throws up to two knives that stick to walls or enemies.'
+    },
+    ghost: {
+      key:'ghost', name:'Ghost Guy', emoji:'👻', maxhp:1000,
+      ghostDamage:15, ghostInterval:0.2, speed:180, r:48,
+      modifiers:{
+        fear:{name:'Fear', desc:'Every 200 damage gives Ghost and his target 15% movement speed'},
+        nightmare:{name:'Nightmare', desc:'Every 100 damage adds 20 nightmare damage'}
+      },
+      desc:'Passes through enemies, becoming invincible and attacking from inside them.'
+    },
+    camera: {
+      key:'camera', name:'Camera Guy', emoji:'📷', maxhp:1000,
+      cameraInterval:4, flashDamage:80, recordDamage:30, speed:165, r:50,
+      modifiers:{
+        smile:{name:'Smile!', desc:'Recording ticks stun for 0.175s'},
+        photogenic:{name:'Photogenic', desc:'After recording, summon another flash'}
+      },
+      desc:'Flashes a large triangle, then records a shrinking damaging triangle.'
+    },
+    tired: {
+      key:'tired', name:'Tired Guy', emoji:'😴', maxhp:1000,
+      zzzDamage:30, zzzCount:3, zzzInterval:1.4, zzzSpeed:430, speed:170, r:48,
+      modifiers:{
+        snoring:{name:'Snoring', desc:'+1 Zzz and +10 damage per Zzz'},
+        sleepy:{name:'Sleepy', desc:'Every Zzz hit stacks Sleepy; at 10, sleep and lose speed/attack speed'}
+      },
+      desc:'Fires Zzz projectiles that damage and put enemies to sleep.'
+    },
+    barbarian: {
+      key:'barbarian', name:'Barbarian Guy', emoji:'🪓', maxhp:1000,
+      baseDamage:20, fireRate:1, meleeRange:135, speed:185, r:50,
+      modifiers:{
+        trueRage:{name:'True Rage', desc:'Rageblade rage increases damage permanently until hurt'},
+        frenzy:{name:'Frenzy', desc:'Successful hits grant attack and movement speed for 3 seconds'}
+      },
+      desc:'Swings every second and upgrades weapons through rage thresholds.'
+    },
+    detective: {
+      key:'detective', name:'Detective Guy', emoji:'🕵️', maxhp:1000,
+      tapeDamage:150, tapeRange:100, speed:175, r:50,
+      modifiers:{
+        spy:{name:'Spy', desc:'Nearby enemies are hit by a magnifying glass for 80 damage'},
+        crimeScene:{name:'Crime Scene', desc:'Damage from Detective Guy grants speed and boosts later tape walls'}
+      },
+      desc:'Leaves tape at walls and connects tape pairs into damaging barriers.'
+    },
+    blind: {
+      key:'blind', name:'Blind Guy', emoji:'🦯', maxhp:1000,
+      caneDamage:120, caneRange:120, speed:165, r:50,
+      modifiers:{
+        swiftCane:{name:'Swift cane', desc:'Adds a faster long-range 55 damage follow-up swing'},
+        alert:{name:'Alert', desc:'Senses nearby enemies and swings without contact'}
+      },
+      desc:'Cannot attack willingly; impacts alert him and trigger a cane swing.'
+    },
+    pirate: {
+      key:'pirate', name:'Pirate Guy', emoji:'🏴‍☠️', maxhp:1000,
+      damage:120, fireRate:1.5, projSpeed:420, speed:165, r:50,
+      modifiers:{
+        plunder:{name:'Plunder', desc:'Cannonball hits heal 20 HP'},
+        broadside:{name:'Broadside', desc:'Fires a spread of 3 cannonballs for 70% damage each'}
+      },
+      desc:'Fires a cannonball for 120 dmg every 1.5s.'
+    },
+    wizard: {
+      key:'wizard', name:'Wizard Guy', emoji:'🧙‍♂️', maxhp:1000,
+      damage:90, fireRate:1.3, projSpeed:380, speed:170, r:50,
+      modifiers:{
+        frostbite:{name:'Frostbite', desc:'Spells stun enemies for 0.3s'},
+        arcane:{name:'Arcane Surge', desc:'Casts two spells at once'}
+      },
+      desc:'Hurls a fireball for 90 dmg every 1.3s.'
+    },
+    ninja: {
+      key:'ninja', name:'Ninja Guy', emoji:'🥷', maxhp:1000,
+      damage:45, fireRate:0.9, projSpeed:600, speed:210, r:46,
+      modifiers:{
+        twin:{name:'Five Stars', desc:'Throws 5 shuriken instead of 3'},
+        bloodlust:{name:'Bloodlust', desc:'Each shuriken hit heals 8 HP'}
+      },
+      desc:'Fast and fragile. Throws a fan of 3 shuriken every 0.9s.'
+    },
+    robot: {
+      key:'robot', name:'Robot Guy', emoji:'🤖', maxhp:1000,
+      damage:12, fireRate:0.15, projSpeed:700, speed:150, r:52,
+      modifiers:{
+        overclock:{name:'Overclock', desc:'Each laser hit adds +0.3 damage (stacking)'},
+        repair:{name:'Repair Bot', desc:'Each laser hit heals 3 HP'}
+      },
+      desc:'Rapid-fire laser, 12 dmg every 0.15s.'
+    },
+    vampire: {
+      key:'vampire', name:'Vampire Guy', emoji:'🧛', maxhp:1000,
+      damage:60, fireRate:0.8, meleeRange:70, speed:185, r:50,
+      modifiers:{
+        bloodthirst:{name:'Bloodthirst', desc:'Bites heal 100% of damage instead of 50%'},
+        batForm:{name:'Bat Form', desc:'Once, below 40% HP, turns into a bat: invisible and untouchable for 2s'}
+      },
+      desc:'Bites for 60 dmg every 0.8s and heals half the damage dealt.'
+    },
+    frog: {
+      key:'frog', name:'Frog Guy', emoji:'🐸', maxhp:1000,
+      damage:100, fireRate:3, speed:175, r:50,
+      modifiers:{
+        longTongue:{name:'Long Tongue', desc:'Tongue deals 150 damage'},
+        sticky:{name:'Sticky', desc:'Pulled enemies are stunned for 0.6s'}
+      },
+      desc:'Every 3s, yanks the enemy to him with his tongue for 100 dmg.'
+    },
+    alien: {
+      key:'alien', name:'Alien Guy', emoji:'👽', maxhp:1000,
+      damage:150, fireRate:4, speed:160, r:50,
+      modifiers:{
+        probe:{name:'Probe', desc:'Abductions deal 100 extra damage'},
+        warp:{name:'Warp', desc:'Abducted enemies are dropped at a random spot'}
+      },
+      desc:'Every 4s, a tractor beam stuns the enemy for 1s and slams for 150 dmg.'
+    },
+    magician: {
+      key:'magician', name:'Magician Guy', emoji:'🎩', maxhp:1000,
+      fireRate:1.2, speed:175, r:50,
+      modifiers:{
+        finalShow:{name:'Final Show', desc:'Projectile also applies the modifier of the hero it came from'},
+        trick:{name:'Trick', desc:'After a hit, poofs away for 1s, hidden and untouchable, then pops back'}
+      },
+      desc:'Pulls a random hero\'s projectile out of his hat every 1.2s.'
+    },
+    timeguy: {
+      key:'timeguy', name:'Time Guy', emoji:'⏳', maxhp:1000,
+      damage:40, fireRate:0.8, projSpeed:500, speed:170, r:50,
+      modifiers:{
+        quick:{name:'Quickened', desc:'Rewind recharges in 5s instead of 8s'},
+        timeStop:{name:'Time Stop', desc:'Each rewind also freezes the enemy for 1.5s'}
+      },
+      desc:'Shoots 40 dmg time bolts. Every 8s he rewinds to his HP from 3s ago.'
+    },
+    magnet: {
+      key:'magnet', name:'Magnet Guy', emoji:'🧲', maxhp:1000,
+      damage:50, fireRate:1, projSpeed:450, speed:165, r:50,
+      modifiers:{
+        polarity:{name:'Polarity', desc:'Reflected projectiles deal +50% damage'},
+        strong:{name:'Strong Field', desc:'Magnetic field radius is much larger'}
+      },
+      desc:'Reflects enemy projectiles that come near, sending them back.'
+    },
+    knight: {
+      key:'knight', name:'Knight Guy', emoji:'🛡️', maxhp:1000,
+      damage:100, fireRate:1, meleeRange:145, speed:160, r:50,
+      modifiers:{
+        armored:{name:'Armored', desc:'Adds one extra armor hit but slows Knight Guy by 25%'},
+        blastProof:{name:'Blast Proof Protection', desc:'Armor only breaks above 100 damage and gives 80% status resistance'}
+      },
+      desc:'Shield and helmet nullify the first two attacks, then swings every second.'
+    },
+    drunk: {
+      key:'drunk', name:'Drunk Guy', emoji:'🍺', maxhp:1000,
+      damage:111, fireRate:1.5, projSpeed:420, projR:9,
+      modifiers:{
+        sharing:{name:'Sharing', desc:'A successful beer disables attacking for 0.5s and scrambles movement'},
+        hammered:{name:'Hammered', desc:'Below 50% HP: drink, frenzy, double beers and glass spikes'}
+      },
+      speed:210, r:50,
+      desc:'Throws a beer in a straight line for 111 dmg. Staggers around unpredictably instead of a clean bounce.'
+    },
+    henchman: {
+      key:'henchman', name:'Henchmen', emoji:'👊', maxhp:100,
+      damage:75, critDamage:150, critChance:0.05, fireRate:0.9, meleeRange:70,
+      speed:230, r:34,
+      spawnInterval:5, maxCount:10,
+      modifiers:{
+        goons:{name:'Goons', desc:'Strikes stun for 0.15s; additional Henchmen hits add 0.2s'},
+        squadron:{name:'Squadron', desc:'+10 Henchmen and +1 extra Henchman per spawn'}
+      },
+      desc:'75 dmg (5% chance of 150). A fresh Henchman joins every 5s, up to 10. The mob only falls once every last one is down — and keeps recruiting even with none currently on the field.'
+    },
+    manager: {
+      key:'manager', name:'The Manager', emoji:'💼', maxhp:1000,
+      suitcaseDamage:200, suitcaseFireRate:1.5, suitcaseSpeed:400, suitcaseR:11,
+      paperDamage:50, paperCount:8, paperSpeed:320, paperR:6,
+      modifiers:{
+        sales:{name:'Sales', desc:'Briefcase hits heal 50 HP and make the next briefcase 77% faster'},
+        boss:{name:'Boss', desc:'Briefcase bursts use 16 papers; every 5 hits launches 3 briefcases'}
+      },
+      speed:170, r:52,
+      desc:'Flings a suitcase for 200 dmg every 1.5s. On hitting a foe or the wall, it bursts into 8 papers in an octagon spread, 50 dmg each.'
+    },
+    traffic: {
+      key:'traffic', name:'Traffic Director', emoji:'🚦', maxhp:1000,
+      carDamage:334, carInterval:6, carSpeed:900, carR:75,
+      modifiers:{
+        crowdControl:{name:'Crowd Control', desc:'Cars pierce units and stun for 0.7s'},
+        highwaySpeeding:{name:'Highway Speeding', desc:'Cars spawn 25% faster and hit with much stronger knockback'}
+      },
+      speed:160, r:52,
+      desc:'No normal attack. Every 6s, waves in a car that drives straight at the foe for 334 dmg.'
+    },
+    priest: {
+      key:'priest', name:'The Priest', emoji:'🙏', maxhp:1000,
+      dmgMin:200, dmgMax:240, strikeInterval:4, healChance:0.1, healFrac:0.5,
+      modifiers:{
+        blessed:{name:'Blessed', desc:'Area lightning stuns for 0.5s and can strike back with a stun'},
+        pope:{name:'Pope', desc:'20% slower lightning and summons 4 bishops every second'}
+      },
+      speed:170, r:52,
+      desc:'Calls down lightning for 200-240 dmg every 4s. 10% chance per strike to heal for half the damage dealt.'
+    },
+    football: {
+      key:'football', name:'Football Guy', emoji:'🏈', maxhp:1000,
+      chargeDamage:175, chargeInterval:3, chargeSpeed:640,
+      modifiers:{
+        tackle:{name:'Tackle', desc:'Charge hits add 10% current HP damage and stun for 0.7s'},
+        nfl:{name:'NFL', desc:'44% shorter charge cooldown, 50% more knockback, 70% status resistance'}
+      },
+      speed:185, r:52,
+      desc:'No normal attack. Every 3s locks onto a foe and charges for 175 dmg, gaining invincibility for the duration of the charge.'
+    },
+    chess: {
+      key:'chess', name:'Chess Guy', emoji:'♟️', maxhp:1000,
+      attackInterval:3.2,
+      pawnDamage:80, knightDamage:90, bishopDamage:100, rookDamage:110, queenDamage:120,
+      pawnSpeed:260, knightSpeed:340, bishopSpeed:320, rookSpeed:360, queenSpeed:430,
+      modifiers:{
+        blitz:{name:'Blitz', desc:'33% shorter attack cooldown'},
+        check:{name:'Check', desc:'Every hit disables the target\'s attacks for 0.6s'}
+      },
+      speed:180, r:52,
+      desc:'Cycles through five chess-piece attacks: pawn, knight, bishop, rook, and queen.'
+    },
+    sentient: {
+      key:'sentient', name:'Sentient Guy', emoji:'🤖', maxhp:1000,
+      dmg:40, fireRate:0.7, projSpeed:420,
+      modifiers:{
+        omnidirectional:{name:'Omnidirectional', desc:'Tracking is no longer limited to 8 directions'},
+        stunlock:{name:'Stunlock', desc:'+20 damage, stuns and breaks passives for 0.175s'}
+      },
+      speed:185, r:52,
+      desc:'Fires every 0.7s. Never misses — 40 dmg a bullet.'
+    },
+    pingpong: {
+      key:'pingpong', name:'Ping Pong Guy', emoji:'🏓', maxhp:1000,
+      ballDmg:50, ballSpeed:300, ballR:14, ballDmgGain:20, ballSpeedMult:2, boostCooldown:1.0,
+      modifiers:{
+        deadlyVelocity:{name:'Deadly Velocity', desc:'Faster balls deal more damage and knock back harder'},
+        masterPong:{name:'Master Pong', desc:'Hits redirect to the enemy and grant speed plus invulnerability'}
+      },
+      speed:170, r:52,
+      desc:'Launches a ball on spawn that bounces around the field and off enemies for 50 base dmg. Whenever it swings back near him, he smashes it — +100% speed, +20 dmg, forever.'
+    },
+    boxing: {
+      key:'boxing', name:'Boxing Guy', emoji:'🥊', maxhp:1000,
+      punchDamage:80, uppercutDamage:120, downDamage:90,
+      fireRate:0.6, meleeRange:78,
+      dodgeBase:0.175, dodgePerChunk:0.10, dodgeHpChunk:33,
+      speed:180, r:52,
+      modifiers:{
+        chaining:{name:'Chaining', desc:'Landing a hit within 0.4s of the last one gives +10 damage, stacking up to +50'},
+        strongBlow:{name:'Strong Blow', desc:"After 3s without landing a hit, the next attack deals +25 damage and stuns for an extra 0.25s"}
+      },
+      desc:'Punches every 0.6s when near, chaining hit after hit, with brief stun and a knockback. Catch a foe above him and he uppercuts for 120 dmg, sending them flying; catch one below and he strikes downward for 90 dmg with a longer stun. Against incoming projectiles he has a 17.5% chance to dodge and step clear, rising 10% for every 33% of his HP he has lost.'
+    },
+    referee: {
+      key:'referee', name:'Referee Guy', emoji:'🟨', maxhp:1000,
+      cardDamage:65, cardInterval:2.2, cardSpeed:520, cardR:11,
+      speed:180, r:50,
+      modifiers:{
+        yellowCard:{name:'Yellow Card', desc:'Each card that lands slows its target by 10%, stacking up to 30%'},
+        redCard:{name:'Red Card', desc:'Cards deal double damage to already-stunned targets'}
+      },
+      desc:'Throws a card at the target every 2.2s, dealing 65 dmg and stunning for 0.4s.'
+    },
+    gardener: {
+      key:'gardener', name:'Gardener Guy', emoji:'🌱', maxhp:1000,
+      seedInterval:3, growTime:1, burstDamage:90, burstRadius:75,
+      bleedDps:15, bleedDuration:3,
+      speed:180, r:50,
+      modifiers:{
+        fertilizer:{name:'Fertilizer', desc:'Seeds sprout 40% faster'},
+        thorns:{name:'Thorns', desc:'The thorn burst leaves a bleed dealing 15 dmg/s for 3s'}
+      },
+      desc:"Plants a seed on the target's spot every 3s. After a second it bursts into thorns, dealing 90 dmg to anyone caught nearby."
+    },
+    parry: {
+      key:'parry', name:'Parry Guy', emoji:'🥋', maxhp:1000,
+      parryCooldown:2.5,
+      modifiers:{
+        blocked:{name:'Blocked', desc:'50% parry chance, no cooldown, and takes 50% damage on failed blocks'},
+        successfulParry:{name:'Successful Parry', desc:'Successful parries heal 25 HP'}
+      },
+      speed:170, r:52,
+      desc:'No normal attack. Every 2.5s of cooldown, the next hit or projectile aimed at him gets parried entirely — negated and reflected straight back at full damage (no bonus).'
+    },
+    tripleT: {
+      key:'tripleT', name:'Triple T', emoji:'🔱', maxhp:1000, selectable:false,
+      dmgMin:90, dmgMax:180, ascDmgMin:125, ascDmgMax:250,
+      fireRate:1.4, meleeRange:166, windup:0.35,
+      healChance:0.2, ascendThreshold:0.5, ascendSpeedMult:1.2,
+      speed:170, r:52,
+      desc:'Winds up before every strike for 90-180 dmg. At 50% health he permanently ascends: 125-250 dmg with knockback, 20% chance per hit to heal himself, and 20% bonus speed.'
+    },
+    allinone: {
+      key:'allinone', name:'The All-In-One Guy', emoji:'🌐', maxhp:250, selectable:false,
+      speed:180, r:52,
+      desc:'Every single ability of every other fighter, present and future, all running at once — the hammer, the beer, the mob, the suitcase, the car, the lightning, the charge, the bullet, the ball, the parry, the ascension, all of it. Only 250 HP. One real mistake and it\'s over.'
+    }
+  };
+
+  const listA = document.getElementById('listA');
+  const listB = document.getElementById('listB');
+  const modsA = document.getElementById('modsA');
+  const modsB = document.getElementById('modsB');
+  const startBtn = document.getElementById('startBtn');
+  const countASelect = document.getElementById('countA');
+  const countBSelect = document.getElementById('countB');
+  const modeSelect = document.getElementById('modeSelect');
+
+  let selA = null, selB = null;
+  let selectedModsA = {}, selectedModsB = {};
+
+  // ---------------------------------------------------------------
+  // Hover tooltip (hover 0.9s over a fighter to see what it does)
+  // ---------------------------------------------------------------
+  const tooltipEl = document.getElementById('hoverTooltip');
+  let tooltipTimer = null;
+  let tooltipShown = false;
+
+  function tooltipHtmlFor(defKey, modifierKeys){
+    const d = DEFS[defKey];
+    if(!d) return '';
+    let html = `<div class="ttName">${d.emoji} ${d.name}</div><div class="ttDesc">${d.desc}</div>`;
+    const modEntries = Object.entries(d.modifiers||{});
+    if(modEntries.length){
+      html += `<div class="ttMods">`;
+      for(const [modKey, mod] of modEntries){
+        const active = modifierKeys && modifierKeys[modKey];
+        html += `<div class="ttMod">${active?'✓ ':''}<b>${mod.name}</b> — ${mod.desc}</div>`;
+      }
+      html += `</div>`;
+    }
+    return html;
+  }
+
+  function positionTooltip(clientX, clientY){
+    const pad = 16;
+    const rect = tooltipEl.getBoundingClientRect();
+    let left = clientX + pad;
+    let top = clientY + pad;
+    if(left + rect.width > window.innerWidth - 8) left = clientX - rect.width - pad;
+    if(top + rect.height > window.innerHeight - 8) top = clientY - rect.height - pad;
+    tooltipEl.style.left = Math.max(8,left)+'px';
+    tooltipEl.style.top = Math.max(8,top)+'px';
+  }
+
+  function showTooltip(html, clientX, clientY){
+    tooltipEl.innerHTML = html;
+    tooltipEl.classList.add('visible');
+    tooltipShown = true;
+    positionTooltip(clientX, clientY);
+  }
+
+  function hideTooltip(){
+    clearTimeout(tooltipTimer);
+    tooltipTimer = null;
+    tooltipShown = false;
+    tooltipEl.classList.remove('visible');
+  }
+
+  function scheduleTooltip(getHtml, clientX, clientY){
+    clearTimeout(tooltipTimer);
+    tooltipShown = false;
+    tooltipTimer = setTimeout(()=>{
+      const html = getHtml();
+      if(html) showTooltip(html, clientX, clientY);
+    }, 900);
+  }
+
+  function renderModifiers(key, side){
+    const panel = side==='A' ? modsA : modsB;
+    const selected = side==='A' ? selectedModsA : selectedModsB;
+    const modifiers = DEFS[key].modifiers;
+    if(!modifiers){
+      panel.className = 'modifierBox';
+      panel.innerHTML = '';
+      return;
+    }
+    panel.className = 'modifierBox visible';
+    panel.innerHTML = `<div class="modifierTitle">MODIFIERS</div>`;
+    Object.entries(modifiers).forEach(([modKey, mod])=>{
+      const label = document.createElement('label');
+      label.className = 'modifierOption';
+      label.innerHTML = `<input type="checkbox" data-modifier="${modKey}"><span><b>${mod.name}</b><br>${mod.desc}</span>`;
+      const input = label.querySelector('input');
+      input.checked = !!selected[modKey];
+      input.addEventListener('change', ()=>{ selected[modKey] = input.checked; });
+      panel.appendChild(label);
+    });
+  }
+
+  function buildCard(key, side){
+    const d = DEFS[key];
+    const card = document.createElement('div');
+    card.className = 'charCard';
+    card.innerHTML = `<div class="charEmoji">${d.emoji}</div>
+      <div class="charInfo"><b>${d.name}</b></div>`;
+    let lastMouse = {x:0,y:0};
+    card.addEventListener('mousemove', (e)=>{
+      lastMouse = {x:e.clientX, y:e.clientY};
+      if(tooltipShown) positionTooltip(e.clientX, e.clientY);
+    });
+    card.addEventListener('mouseenter', (e)=>{
+      lastMouse = {x:e.clientX, y:e.clientY};
+      const activeMods = side==='A' ? selectedModsA : selectedModsB;
+      const isSelected = (side==='A' ? selA : selB) === key;
+      scheduleTooltip(()=>tooltipHtmlFor(key, isSelected ? activeMods : null), lastMouse.x, lastMouse.y);
+    });
+    card.addEventListener('mouseleave', hideTooltip);
+    card.addEventListener('click', ()=>{
+      if(side==='A'){
+        selA = key;
+        selectedModsA = {};
+        [...listA.children].forEach(c=>c.classList.remove('selA'));
+        card.classList.add('selA');
+      } else {
+        selB = key;
+        selectedModsB = {};
+        [...listB.children].forEach(c=>c.classList.remove('selB'));
+        card.classList.add('selB');
+      }
+      renderModifiers(key, side);
+      startBtn.disabled = !(selA && selB);
+    });
+    return card;
+  }
+
+  Object.keys(DEFS).filter(key=>DEFS[key].selectable!==false)
+    .sort((a,b)=>DEFS[a].name.localeCompare(DEFS[b].name))
+    .forEach(key=>{
+    listA.appendChild(buildCard(key,'A'));
+    listB.appendChild(buildCard(key,'B'));
+  });
+
+  // ---------------------------------------------------------------
+  // Arena / simulation
+  // ---------------------------------------------------------------
+  const canvas = document.getElementById('c');
+  const screenCtx = canvas.getContext('2d');
+  const PIX = 4; // 1 game pixel = 4 screen pixels
+  const lo = document.createElement('canvas');
+  lo.width = canvas.width/PIX; lo.height = canvas.height/PIX;
+  const ctx = lo.getContext('2d');
+
+  canvas.addEventListener('mousemove', (e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+    arenaMouse = {
+      x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY,
+      clientX:e.clientX, clientY:e.clientY
+    };
+  });
+  canvas.addEventListener('mouseleave', ()=>{
+    arenaMouse = null;
+    hoveredArenaUnit = null;
+    hideTooltip();
+  });
+
+  function updateArenaHover(){
+    if(!arenaMouse){
+      if(hoveredArenaUnit){ hoveredArenaUnit = null; hideTooltip(); }
+      return;
+    }
+    let found = null;
+    for(const team of teams){
+      for(const u of aliveUnits(team)){
+        if(Math.hypot(u.x-arenaMouse.x, u.y-arenaMouse.y) < u.r){ found = u; break; }
+      }
+      if(found) break;
+    }
+    if(found !== hoveredArenaUnit){
+      hoveredArenaUnit = found;
+      hideTooltip();
+      if(found){
+        const key = found.defKey, mods = found.modifiers;
+        scheduleTooltip(()=>tooltipHtmlFor(key, mods), arenaMouse.clientX, arenaMouse.clientY);
+      }
+    } else if(found && tooltipShown){
+      positionTooltip(arenaMouse.clientX, arenaMouse.clientY);
+    }
+  }
+
+  // Triple T sprites — place these image files next to this HTML file
+  // (or edit the paths below to point wherever you host them).
+  const TRIPLE_T_SPRITES = {
+    normal: new Image(),
+    attack: new Image(),
+    ascended: new Image()
+  };
+  TRIPLE_T_SPRITES.normal.src = 'TripleT.webp';
+  TRIPLE_T_SPRITES.attack.src = 'TripleTattack.webp';
+  TRIPLE_T_SPRITES.ascended.src = 'ascendTripleT.jpg';
+
+  // every other fighter's emoji, orbiting the Ascended Triple T centerpiece
+  const ALLINONE_ORBIT_EMOJIS = ['🔨','🍺','👊','💼','🚦','🙏','🏈','🤖','🏓','🥋'];
+  const BOX = {left:16, top:16, right:canvas.width-16, bottom:canvas.height-16};
+
+  const logEl = document.getElementById('log');
+  function log(msg, hl){
+    const line = document.createElement('div');
+    line.innerHTML = hl ? `<span class="hl">${msg}</span>` : msg;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+    while(logEl.children.length > 60) logEl.removeChild(logEl.firstChild);
+  }
+
+  let uidCounter = 1;
+  let teams = [];
+  let projectiles = [];
+  let floaters = [];
+  let bolts = [];
+  let pingBalls = [];
+  let glassSpikes = [];
+  let seeds = [];
+  let fireworkBursts = [];
+  let tapeWalls = [];
+  let forgeSparks = [];
+  let gameOver = false;
+  let paused = false;
+  let rafId = null;
+  let lastTs = null;
+  let gameMode = 'standard';
+  let modeTimeRemaining = 0;
+  let arenaMouse = null;
+  let hoveredArenaUnit = null;
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function dist(u1,u2){ return Math.hypot(u1.x-u2.x, u1.y-u2.y); }
+
+  function makeUnit(defKey, teamId, x, y, modifiers = {}){
+    const d = DEFS[defKey];
+    const angle = rand(0, Math.PI*2);
+    const spd = d.speed * (defKey==='knight' && modifiers.armored ? 0.75 : 1);
+    const pureRage = defKey==='angry' && modifiers.pureRage;
+    return {
+      id: uidCounter++,
+      defKey, team: teamId,
+      x, y, r: d.r,
+      vx: defKey==='gwnn' ? (Math.random()<0.5 ? -spd : spd) : Math.cos(angle)*spd,
+      vy: defKey==='gwnn' ? 0 : Math.sin(angle)*spd,
+      laneY: y,
+      hp: pureRage ? d.maxhp*0.67 : d.maxhp, maxhp: d.maxhp,
+      modifiers: {...modifiers},
+      damage: d.damage || 0,
+      alive: true,
+      // every fighter's ability runs on its own independent cooldown so
+      // The All-In-One Guy can fire all of them without them fighting each other
+      cdBlacksmith: rand(0, DEFS.blacksmith.fireRate),
+      cdAngry: rand(0, DEFS.angry.fireRate),
+      cdHenchman: rand(0, DEFS.henchman.fireRate),
+      cdDrunk: rand(0, DEFS.drunk.fireRate),
+      cdManager: rand(0, DEFS.manager.suitcaseFireRate),
+      cdTraffic: rand(0, DEFS.traffic.carInterval),
+      cdPriest: rand(0, DEFS.priest.strikeInterval),
+      cdFootball: rand(0, DEFS.football.chargeInterval),
+      cdChess: rand(0, DEFS.chess.attackInterval),
+      cdSentient: rand(0, DEFS.sentient.fireRate),
+      cdTripleT: rand(0, DEFS.tripleT.fireRate),
+      cdGwnn: rand(0, DEFS.gwnn.reloadTime),
+      gwnnBurstTimer:0, gwnnShots:0, gwnnReloading:false,
+      cdNecro: rand(0, DEFS.necromancer.skeletonInterval),
+      cdSkeleton: rand(0, DEFS.skeleton.fireRate),
+      cdWoman: rand(0, DEFS.woman.nailFireRate),
+      cdFireworks:0, cdChef: rand(0, DEFS.chef.knifeFireRate),
+      cdGhost:rand(0,DEFS.ghost.ghostInterval), cdCamera:rand(0,DEFS.camera.cameraInterval),
+      cdTired:rand(0,DEFS.tired.zzzInterval), cdBarbarian:rand(0,DEFS.barbarian.fireRate),
+      cdBoxing:rand(0,0.15), chainStacks:0, chainTimer:0, boxingIdleTimer:0,
+      cdReferee:rand(0,DEFS.referee.cardInterval), refereeSlowStacks:0,
+      cdGardener:rand(0,DEFS.gardener.seedInterval),
+      bleedTimer:0, bleedDps:0, bleedTickTimer:0,
+      fireworkSpeedBoost:0, activeKnives:0,
+      cdDetective:0, cdBlind:0, cdKnight:rand(0, DEFS.knight.fireRate),
+      detectiveTape:null, detectiveSpeedBoost:0, detectiveDamageBoost:0,
+      blindAlert:false, blindSwing:false, blindSwingTimer:0, blindSwingAngle:0, blindFollowUp:false,
+      knightArmorHits: defKey==='knight' ? (modifiers.armored ? 3 : 2) : 0,
+      swingTimer:0, swingAngle:0, swingKind:'',
+      ghostInside:false, ghostSpeedBonus:0, nightmareBonus:0, ghostDamageTotal:0,
+      cameraRecording:0, cameraFlash:0,
+      cameraTick:0,
+      sleepyStacks:0, sleepyTimer:0, sleepTimer:0,
+      rage:0, weaponTier:0, rageDamageBonus:0, frenzyTimer:0, frenzyStacks:0,
+      speedMultiplier:1, attackSpeedMultiplier:1,
+      womanStacks:0, womanStackTimer:0,
+      chessStage: 0,
+      attackDisabled:0,
+      stunTimer:0,
+      passiveDisabled:0,
+      statusResist:0,
+      statusResistFactor: defKey==='knight' && modifiers.blastProof ? 1.8 : 1,
+      speedBoostTimer:0,
+      fearActive:false,
+      popeTimer:0,
+      chargeHit:false,
+      managerHits:0, managerFastCase:false,
+      anglingShots:0, anglingTimer:0,
+      hammeredCutscene:false, hammeredTimer:0, frenzy:false,
+      forgeBonus: 0, forgeTimer: 0,
+      drunkTimer: rand(0.2,0.6),
+      charging:false, invincible:false, chargeTarget:null, chargeTime:0,
+      parryCd:0,
+      striking:false, strikeTimer:0, strikeTarget:null, ascended:false,
+      bombArmed:false, bombTimer:0, bombTriggered:false,
+      armor:0,
+      invulnTimer:0
+    };
+  }
+
+  function makeTeam(defKey, teamId, x, y, modifiers = {}, count = 1){
+    const team = {
+      id: teamId, defKey,
+      modifiers: {...modifiers},
+      color: teamId==='A' ? getCss('--teamA') : getCss('--teamB'),
+      units: [], spawnTimer: 0, spawnedCount: 1,
+      homeX: x, homeY: y
+    };
+    const leaders=[];
+    for(let i=0;i<count;i++){
+      const unit=makeUnit(defKey,teamId,x+rand(-30,30),y+rand(-100,100),modifiers);
+      team.units.push(unit); leaders.push(unit);
+    }
+    const leader = leaders[0];
+    team.leaderId = leader.id;
+    return team;
+  }
+
+  function getCss(varName){
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+
+  function aliveUnits(team){ return team.units.filter(u=>u.alive); }
+  function teamDefeated(team){
+    if(team.defKey==='henchman'){
+      // The mob only loses once it has used up all 10 spawns AND every one is down.
+      const maxCount = DEFS.henchman.maxCount + (team.modifiers.squadron ? 10 : 0);
+      return team.spawnedCount >= maxCount && aliveUnits(team).length===0;
+    }
+    if(team.defKey==='allinone'){
+      // Extremely fragile: the team falls the instant the All-In-One Guy himself dies,
+      // even if he spawned a Henchman mob that's still standing.
+      const leader = team.units.find(u=>u.id===team.leaderId);
+      return !leader || !leader.alive;
+    }
+    if(team.defKey==='necromancer'){
+      const leader = team.units.find(u=>u.id===team.leaderId);
+      return !leader || !leader.alive;
+    }
+    return team.units.length>0 && aliveUnits(team).length===0;
+  }
+
+  function endCharge(unit){
+    unit.charging = false;
+    unit.invincible = false;
+    unit.chargeTarget = null;
+  }
+
+  function otherTeam(t){ return t.id==='A' ? teams[1] : teams[0]; }
+
+  function nearestEnemy(unit, enemyTeam){
+    let best=null, bestD=Infinity;
+    for(const e of enemyTeam.units){
+      if(!e.alive) continue;
+      const dd = dist(unit,e);
+      if(dd<bestD){bestD=dd; best=e;}
+    }
+    return best;
+  }
+
+  function addFloater(x,y,text,color){
+    floaters.push({x,y,text,color:color||'#fff', life:0.9, vy:-38});
+  }
+
+  function inCone(origin,target,angle,width,length){
+    const dx=target.x-origin.x, dy=target.y-origin.y;
+    const distance=Math.hypot(dx,dy);
+    if(distance>length) return false;
+    const delta=Math.atan2(Math.sin(Math.atan2(dy,dx)-angle),Math.cos(Math.atan2(dy,dx)-angle));
+    return Math.abs(delta)<=width/2;
+  }
+
+  function grantMovementSpeed(unit, amount, duration){
+    unit.speedBoostTimer=Math.max(unit.speedBoostTimer||0,duration);
+    unit.speedBoostAmount=Math.max(unit.speedBoostAmount||0,amount);
+  }
+
+  function angryLostPct(unit){
+    // Standard mode: capped 0-100% based on actual HP lost.
+    // Timed mode: HP never truly depletes (infinite HP rule), so the buff
+    // instead scales uncapped off cumulative damage taken - "no damage buff limit".
+    if(gameMode==='timed') return ((unit.damageTaken||0) / unit.maxhp) * 100;
+    return (1 - unit.hp / unit.maxhp) * 100;
+  }
+
+  function angryDamage(unit){
+    const lostPct = angryLostPct(unit);
+    const baseDamage = unit.damage ?? DEFS.angry.damage;
+    return baseDamage + (lostPct * DEFS.angry.rageDamageGain);
+  }
+
+  function angryKnockbackFactor(unit){
+    if(!unit || unit.defKey !== 'angry') return 1;
+    const lostPct = angryLostPct(unit);
+    return Math.max(0.2, 1 - (lostPct * DEFS.angry.rageKnockbackResist));
+  }
+
+  function boxingDodgeChance(unit){
+    const dB = DEFS.boxing;
+    const lostPct = (1 - unit.hp/unit.maxhp) * 100;
+    return dB.dodgeBase + (lostPct/dB.dodgeHpChunk)*dB.dodgePerChunk;
+  }
+
+  function snapToEightDirection(dx, dy){
+    const angle = Math.atan2(dy, dx);
+    return Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+  }
+
+  function spawnDirectionalProjectile({x, y, team, owner, angle, speed, r, dmg, kind, extra = {}}){
+    projectiles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r, dmg, team, owner, kind,
+      turnTimer: 0,
+      turnDir: 1,
+      ...extra
+    });
+  }
+
+  function chessPatternDirs(kind){
+    const list = {
+      pawn: [90, 180, 0, 270],
+      knight: [90, 180, 0, 270],
+      bishop: [135, 225, 315, 45],
+      rook: [90, 0, 180, 270],
+      queen: [90, 135, 180, 225, 270, 315, 0, 45]
+    };
+    return list[kind] || [];
+  }
+
+  function hasModifier(unit, key){
+    return !!(unit && unit.modifiers && unit.modifiers[key]);
+  }
+
+  function applyStun(unit, duration, stack){
+    if(!unit || !unit.alive) return;
+    const adjusted = duration * (unit.statusResist>0 ? 0.3 : 1) / (unit.statusResistFactor || 1);
+    unit.stunTimer = stack
+      ? (unit.stunTimer || 0) + adjusted
+      : Math.max(unit.stunTimer || 0, adjusted);
+  }
+
+  function disableAttacks(unit, duration){
+    if(!unit || !unit.alive) return;
+    const adjusted = duration * (unit.statusResist>0 ? 0.3 : 1) / (unit.statusResistFactor || 1);
+    unit.attackDisabled = Math.max(unit.attackDisabled || 0, adjusted);
+  }
+
+  function scrambleDrunkMovement(unit){
+    const angle = rand(0, Math.PI*2);
+    const speed = rand(70,220);
+    unit.vx = Math.cos(angle)*speed;
+    unit.vy = Math.sin(angle)*speed;
+    unit.drunkTimer = 0.5;
+  }
+
+  function spawnGlassSpikes(x, y, owner){
+    glassSpikes.push({x, y, owner, r:28, life:5, hitTimer:0});
+    addFloater(x, y-12, 'GLASS!', '#9de7ff');
+  }
+
+  function explodeFirework(firework){
+    const radius = DEFS.fireworks.fireworkAoe;
+    const enemyTeam = teams.find(team=>team.id!==firework.team);
+    for(const unit of aliveUnits(enemyTeam || {units:[]})){
+      if(Math.hypot(unit.x-firework.x, unit.y-firework.y) <= radius){
+        dealDamage(firework.owner, unit, firework.dmg, null, true);
+        if(hasModifier(firework.owner, 'sparks')) applyKnockback(firework.owner, unit, {x:firework.vx*3,y:firework.vy*3});
+      }
+    }
+    if(hasModifier(firework.owner, 'july4')){
+      firework.owner.fireworkSpeedBoost = Math.min(2, firework.owner.fireworkSpeedBoost+0.15);
+    }
+    addFloater(firework.x, firework.y, 'BOOM!', '#ffcf6b');
+    fireworkBursts.push({x:firework.x,y:firework.y,life:0.55,maxLife:0.55,owner:firework.owner,sparks:hasModifier(firework.owner,'sparks')});
+    log(`🎆 Firework explodes for ${Math.round(firework.dmg)} area damage!`, true);
+  }
+
+  function placeDetectiveTape(unit, wallDirection){
+    const tape = {x:unit.x, y:unit.y, owner:unit, life:Infinity, direction:wallDirection};
+    if(unit.detectiveTape){
+      tapeWalls.push({x1:unit.detectiveTape.x,y1:unit.detectiveTape.y,x2:tape.x,y2:tape.y,owner:unit,hitCooldown:0,damageBoost:unit.detectiveDamageBoost||0});
+      unit.detectiveTape = null;
+      log(`🕵️ Detective Guy connects two tape marks into a damage wall!`, true);
+    } else {
+      unit.detectiveTape = tape;
+      log(`🕵️ Detective Guy places tape on the wall.`);
+    }
+  }
+
+  function applyKnockback(attacker, defender, dirOverride, forceMult){
+    let dx = defender.x-attacker.x, dy = defender.y-attacker.y;
+    if(dirOverride){ dx = dirOverride.x; dy = dirOverride.y; }
+    const len = Math.hypot(dx,dy) || 1;
+    const nx = dx/len, ny = dy/len;
+    const KB = 250*(forceMult||1);
+    const defenderScale = angryKnockbackFactor(defender);
+    defender.vx = nx*KB*defenderScale; defender.vy = ny*KB*defenderScale;
+    attacker.vx -= nx*70; attacker.vy -= ny*70;
+  }
+
+  function spawnPapers(x,y,team,owner,count){
+    const d = DEFS.manager;
+    const paperCount = count || d.paperCount;
+    for(let i=0;i<paperCount;i++){
+      const ang = i*(Math.PI*2/paperCount);
+      projectiles.push({
+        x,y, vx:Math.cos(ang)*d.paperSpeed, vy:Math.sin(ang)*d.paperSpeed,
+        r:d.paperR, dmg:d.paperDamage, team, owner, kind:'paper'
+      });
+    }
+    log(`📄 Papers scatter in every direction!`);
+  }
+
+  function killCheck(unit, killer){
+    if(unit.hp<=0 && unit.alive){
+      unit.alive=false; unit.hp=0;
+      const d = DEFS[unit.defKey];
+      log(`💀 ${d.name} (Team ${unit.team}) has fallen.`);
+    }
+  }
+
+  function armBomb(unit){
+    if(!unit || unit.defKey!=='exploding' || unit.bombArmed || !unit.alive) return;
+    unit.bombArmed = true;
+    unit.bombTimer = DEFS.exploding.triggerTime - (hasModifier(unit, 'tickingBomb') ? 1.5 : 0);
+    addFloater(unit.x, unit.y-unit.r-18, `BOMB ${unit.bombTimer.toFixed(1)}s`, '#ff8a5b');
+    log(`💣 ${DEFS[unit.defKey].name} arms a bomb!`, true);
+  }
+
+  // Central damage pipeline: every attack (melee, projectile, lightning, charge, ball)
+  // routes through here so invincibility and Parry Guy behave consistently everywhere.
+  // Returns true if the hit registered (false only when the target was invincible).
+  const MAGIC=[
+    {name:'Pirate',em:'⚫',dmg:120,spd:420,fx:(o,u)=>{o.hp=Math.min(o.maxhp,o.hp+20);}},
+    {name:'Wizard',em:'🔥',dmg:90,spd:380,fx:(o,u)=>applyStun(u,0.3)},
+    {name:'Ninja',em:'✴️',dmg:45,spd:600,fx:(o,u)=>{o.hp=Math.min(o.maxhp,o.hp+8);}},
+    {name:'Robot',em:'🔸',dmg:40,spd:700,fx:(o,u)=>{o.hp=Math.min(o.maxhp,o.hp+3);}},
+    {name:'Drunk',em:'🍺',dmg:111,spd:420,fx:(o,u)=>{u.attackDisabled=0.5;}},
+    {name:'Woman',em:'💅',dmg:100,spd:520,fx:(o,u)=>{o.hp=Math.min(o.maxhp,o.hp+15);}},
+    {name:'Chef',em:'🔪',dmg:200,spd:520,fx:(o,u)=>{o.hp=Math.min(o.maxhp,o.hp+50);}},
+    {name:'Gunslinger',em:'🔫',dmg:35,spd:850,fx:(o,u)=>applyStun(u,0.1)},
+    {name:'Tired',em:'💤',dmg:40,spd:430,fx:(o,u)=>applyStun(u,0.15)}
+  ];
+  function dealDamage(attacker, target, dmg, knockDir, noKnockback, forceMult){
+    if(!target || !target.alive) return false;
+    if(target.invincible) return false;
+
+    if(target.defKey==='knight' && target.knightArmorHits>0){
+      const breaksArmor = !hasModifier(target, 'blastProof') || dmg>100;
+      if(breaksArmor) target.knightArmorHits--;
+      addFloater(target.x,target.y-target.r-18,breaksArmor?'ARMOR BREAK':'BLOCKED','#ffe066');
+      if(attacker && attacker.defKey==='exploding' && dmg>=DEFS.exploding.explosionDamage){
+        log(`🛡️ Knight Guy blocks the explosion!`, true);
+      }
+      return false;
+    }
+
+    const blocked = target.defKey==='parry' && hasModifier(target, 'blocked');
+    const parrySuccess = (target.defKey==='parry' || target.defKey==='allinone') &&
+      (blocked ? Math.random()<0.5 : target.parryCd<=0);
+
+    if(blocked && !parrySuccess){
+      const payback = dmg*0.5;
+      target.hp -= payback;
+      addFloater(target.x, target.y-target.r-4, `-${Math.round(payback)}`, '#ff8a5b');
+      killCheck(target, attacker);
+      return true;
+    }
+
+    if(target.defKey==='exploding' && !target.bombArmed && target.alive){
+      armBomb(target);
+    }
+
+    if(parrySuccess){
+      if(!blocked) target.parryCd = DEFS.parry.parryCooldown;
+      addFloater(target.x, target.y-target.r-16, 'PARRY!', '#ffe066');
+      log(`🥋 Parry Guy negates the hit and sends it right back!`, true);
+      if(attacker && attacker.alive){
+        applyKnockback(target, attacker, knockDir ? {x:-knockDir.x,y:-knockDir.y} : undefined);
+        if(!attacker.invincible){
+          const reflected = Math.round(dmg);
+          attacker.hp -= reflected;
+          addFloater(attacker.x, attacker.y-attacker.r-4, `-${reflected}`, '#ff5b5b');
+          killCheck(attacker, target);
+        }
+      }
+      if(hasModifier(target, 'successfulParry')){
+        target.hp = Math.min(target.maxhp, target.hp+25);
+        addFloater(target.x, target.y-target.r-18, '+25 HP', '#8fffb0');
+      }
+      return true;
+    }
+
+    let finalDamage = dmg;
+    if(target.defKey==='barbarian' && finalDamage>=100) target.rageDamageBonus=0;
+    if(target.armor>0) finalDamage = Math.max(1, finalDamage-target.armor);
+    if(target.defKey==='angry' && hasModifier(target, 'pureRage')) finalDamage *= 0.67;
+    if(target.defKey==='knight' && hasModifier(target, 'blastProof')) target.statusResist = 999;
+    if(target.defKey==='necromancer' && hasModifier(target, 'protected')){
+      const team = teams.find(t=>t.id===target.team);
+      const skellies = aliveUnits(team || {units:[]}).filter(u=>u.defKey==='skeleton');
+      const shared = finalDamage*0.5;
+      finalDamage *= 0.5;
+      if(skellies.length){
+        const each = shared/skellies.length;
+        for(const skeleton of skellies){
+          skeleton.hp -= each;
+          addFloater(skeleton.x, skeleton.y-skeleton.r-4, `-${Math.round(each)}`, '#ff8a5b');
+          killCheck(skeleton, attacker);
+        }
+      } else {
+        finalDamage += shared;
+      }
+    }
+    if(gameMode==='timed'){
+      target.damageTaken=(target.damageTaken||0)+finalDamage;
+      addFloater(target.x,target.y-target.r-4,`-${Math.round(finalDamage)}`,'#ff8a5b');
+      if(attacker && !noKnockback) applyKnockback(attacker,target,knockDir);
+      return true;
+    }
+    target.hp -= finalDamage;
+    addFloater(target.x, target.y-target.r-4, `-${Math.round(finalDamage)}`, '#ff8a5b');
+    if(attacker && hasModifier(attacker, 'stunlock')){
+      applyStun(target, 0.175);
+      target.passiveDisabled = Math.max(target.passiveDisabled || 0, 0.175);
+    }
+    if(attacker && attacker.defKey==='detective' && hasModifier(attacker,'crimeScene')){
+      attacker.detectiveSpeedBoost = 0.5;
+      attacker.detectiveDamageBoost = 0.25;
+      attacker.crimeSceneTimer = 1;
+    }
+    if(target.defKey==='blind'){
+      target.blindAlert = true;
+      target.blindSwingTimer = 0;
+    }
+    if(attacker && attacker.defKey==='chess' && hasModifier(attacker, 'check')){
+      disableAttacks(target, 0.6);
+    }
+    if(target.defKey==='priest' && hasModifier(target, 'blessed') && attacker && Math.random()<0.33){
+      bolts.push({x1:target.x,y1:target.y,x2:attacker.x,y2:attacker.y,life:0.25,color:'#fff2a6'});
+      applyStun(attacker, 1);
+      addFloater(attacker.x, attacker.y-attacker.r-14, 'STUN LIGHTNING', '#fff2a6');
+    }
+    if(attacker && !noKnockback) applyKnockback(attacker, target, knockDir, forceMult);
+    killCheck(target, attacker);
+    return true;
+  }
+
+  // ------------- main update -------------
+  const NEAR_WALL_DIST = 55;
+  const NEAR_UNIT_DIST = 75;
+  const NEAR_SPEED_FACTOR = 1.2;
+
+  function update(dt){
+    if(gameOver || paused) return;
+    if(gameMode==='timed'){
+      modeTimeRemaining=Math.max(0,modeTimeRemaining-dt);
+      if(modeTimeRemaining<=0){ endTimedGame(); return; }
+    }
+
+    const allAliveNow = teams.flatMap(t=>aliveUnits(t));
+
+    for(const team of teams){
+      const enemy = otherTeam(team);
+      for(const unit of aliveUnits(team)){
+        const d = DEFS[unit.defKey];
+
+        if(unit.parryCd>0){ unit.parryCd = Math.max(0, unit.parryCd - dt); }
+        if(unit.stunTimer>0) unit.stunTimer = Math.max(0, unit.stunTimer-dt);
+        if(unit.passiveDisabled>0) unit.passiveDisabled = Math.max(0, unit.passiveDisabled-dt);
+        if(unit.statusResist>0) unit.statusResist = Math.max(0, unit.statusResist-dt);
+        if(unit.speedBoostTimer>0) unit.speedBoostTimer = Math.max(0, unit.speedBoostTimer-dt);
+        if(unit.invulnTimer > 0){
+          unit.invulnTimer = Math.max(0, unit.invulnTimer - dt);
+          if(unit.invulnTimer <= 0) unit.invincible = false;
+        }
+        if(unit.defKey==='exploding' && unit.bombArmed){
+          if(unit.passiveDisabled<=0) unit.bombTimer -= dt;
+          if(unit.bombTimer <= 0){
+            unit.bombArmed = false;
+            unit.bombTriggered = true;
+            const explodeTarget = nearestEnemy(unit, otherTeam(team));
+            addFloater(unit.x, unit.y-unit.r-12, 'EXPLODE!', '#ff8a5b');
+            log(`💥 ${DEFS[unit.defKey].name} detonates!`, true);
+            if(explodeTarget && explodeTarget.alive){
+              dealDamage(unit, explodeTarget, DEFS.exploding.explosionDamage);
+            }
+            if(gameMode!=='timed'){
+              unit.hp = 0;
+              unit.alive = false;
+              killCheck(unit, explodeTarget || unit);
+            }
+          }
+        }
+
+        if(unit.defKey==='drunk' && hasModifier(unit, 'hammered') && !unit.hammeredCutscene && !unit.frenzy && unit.hp/unit.maxhp < 0.5){
+          unit.hammeredCutscene = true;
+          unit.hammeredTimer = 2.2;
+          unit.attackDisabled = unit.hammeredTimer;
+          log(`🍺 Drunk Guy starts the five-beer cutscene!`, true);
+        }
+        if(unit.hammeredCutscene){
+          unit.hammeredTimer -= dt;
+          if(unit.hammeredTimer<=0){
+            unit.hammeredCutscene = false;
+            unit.frenzy = true;
+            log(`🔥 Drunk Guy enters a beer frenzy!`, true);
+          }
+        }
+
+        // ---- movement ----
+        if(unit.defKey==='drunk' || unit.defKey==='allinone'){
+          unit.drunkTimer -= dt;
+          if(unit.drunkTimer<=0){
+            const ang = rand(0,Math.PI*2);
+            const spd = rand(70,220);
+            unit.vx = Math.cos(ang)*spd;
+            unit.vy = Math.sin(ang)*spd;
+            unit.drunkTimer = rand(0.25,0.6);
+          }
+        }
+          if(unit.attackDisabled>0) unit.attackDisabled = Math.max(0, unit.attackDisabled-dt);
+        let moveFactor = 1;
+        if(!((unit.defKey==='football' || unit.defKey==='allinone') && unit.charging)){
+          const nearWall = (unit.x-unit.r-BOX.left < NEAR_WALL_DIST) ||
+                            (BOX.right-(unit.x+unit.r) < NEAR_WALL_DIST) ||
+                            (unit.y-unit.r-BOX.top < NEAR_WALL_DIST) ||
+                            (BOX.bottom-(unit.y+unit.r) < NEAR_WALL_DIST);
+          let nearUnit = false;
+          if(!nearWall){
+            for(const other of allAliveNow){
+              if(other===unit) continue;
+              if(unit.defKey==='ghost' || other.defKey==='ghost') continue;
+              if(dist(unit,other)-(unit.r+other.r) < NEAR_UNIT_DIST){ nearUnit=true; break; }
+            }
+          }
+          if(nearWall || nearUnit) moveFactor = NEAR_SPEED_FACTOR;
+        }
+        if(unit.defKey==='drunk' && unit.frenzy) moveFactor *= 1.33;
+        if(unit.speedBoostTimer>0 && unit.speedBoostAmount) moveFactor *= 1+unit.speedBoostAmount;
+        if(unit.speedMultiplier) moveFactor *= unit.speedMultiplier;
+        if(unit.refereeSlowStacks) moveFactor *= (1 - 0.1*unit.refereeSlowStacks);
+        if(unit.defKey==='barbarian' && hasModifier(unit,'frenzy') && unit.frenzyTimer>0) moveFactor *= 1+0.2*(unit.frenzyStacks||0);
+        if(unit.defKey==='fireworks') moveFactor *= 1 + Math.min(unit.fireworkSpeedBoost, 2);
+        if(unit.defKey==='detective') moveFactor *= 1 + Math.min(unit.detectiveSpeedBoost, 0.5);
+        if(unit.defKey==='blind') moveFactor *= 1 + (unit.blindSpeedBonus||0);
+        if(unit.defKey==='gwnn'){
+          unit.y = unit.laneY;
+          unit.vy = 0;
+        }
+        if((unit.defKey==='tripleT' || unit.defKey==='allinone') && unit.ascended){
+          moveFactor *= DEFS.tripleT.ascendSpeedMult;
+        }
+
+        if(unit.stunTimer<=0){
+          unit.x += unit.vx*dt*moveFactor;
+          if(unit.defKey!=='gwnn') unit.y += unit.vy*dt*moveFactor;
+        }
+
+        let bounced=false, wallDirection=null;
+        if(unit.x-unit.r < BOX.left){ unit.x=BOX.left+unit.r; unit.vx=Math.abs(unit.vx); bounced=true; wallDirection={x:1,y:0}; }
+        if(unit.x+unit.r > BOX.right){ unit.x=BOX.right-unit.r; unit.vx=-Math.abs(unit.vx); bounced=true; wallDirection={x:-1,y:0}; }
+        if(unit.y-unit.r < BOX.top){ unit.y=BOX.top+unit.r; unit.vy=Math.abs(unit.vy); bounced=true; wallDirection={x:0,y:1}; }
+        if(unit.y+unit.r > BOX.bottom){ unit.y=BOX.bottom-unit.r; unit.vy=-Math.abs(unit.vy); bounced=true; wallDirection={x:0,y:-1}; }
+        if(bounced && unit.defKey==='fireworks' && wallDirection){
+          const count = hasModifier(unit, 'sparks') ? 2 : 1;
+          for(let fireworkIndex=0;fireworkIndex<count;fireworkIndex++){
+            projectiles.push({x:unit.x+wallDirection.x*unit.r,y:unit.y+wallDirection.y*unit.r,
+              vx:0,vy:0,r:DEFS.fireworks.fireworkR,dmg:DEFS.fireworks.fireworkDamage*(hasModifier(unit,'sparks')?0.3:1),
+              team:team.id,owner:unit,kind:'firework',fuse:0.5,launched:false,dir:{...wallDirection},hitUnits:{}});
+          }
+              log(`🎆 Fireworks Guy plants ${count} firework${count>1?'s':''} on the wall!`, true);
+        }
+        if(bounced && unit.defKey==='detective' && wallDirection) placeDetectiveTape(unit, wallDirection);
+        if(bounced && (unit.defKey==='drunk' || unit.defKey==='allinone')){
+          const wobble = rand(-0.6,0.6);
+          const cos=Math.cos(wobble), sin=Math.sin(wobble);
+          const nvx = unit.vx*cos - unit.vy*sin;
+          const nvy = unit.vx*sin + unit.vy*cos;
+          unit.vx=nvx; unit.vy=nvy;
+        }
+        if(bounced && (unit.defKey==='football' || unit.defKey==='allinone') && unit.charging){
+          endCharge(unit);
+        }
+      }
+    }
+
+    // ---- collisions between all alive units (any team) ----
+    const all = teams.flatMap(t=>aliveUnits(t));
+    for(let i=0;i<all.length;i++){
+      for(let j=i+1;j<all.length;j++){
+        const u1=all[i], u2=all[j];
+        const dx=u2.x-u1.x, dy=u2.y-u1.y;
+        const d = Math.hypot(dx,dy) || 0.0001;
+        const minD = u1.r+u2.r;
+        if(d < minD && u1.defKey!=='ghost' && u2.defKey!=='ghost'){
+          const nx=dx/d, ny=dy/d;
+          const overlap = (minD-d)/2;
+          u1.x -= nx*overlap; u1.y -= ny*overlap;
+          u2.x += nx*overlap; u2.y += ny*overlap;
+          const v1n = u1.vx*nx+u1.vy*ny;
+          const v2n = u2.vx*nx+u2.vy*ny;
+          u1.vx += (v2n-v1n)*nx; u1.vy += (v2n-v1n)*ny;
+          u2.vx += (v1n-v2n)*nx; u2.vy += (v1n-v2n)*ny;
+          if(u1.defKey==='blind') u1.blindAlert=true;
+          if(u2.defKey==='blind') u2.blindAlert=true;
+        }
+      }
+    }
+
+    // ---- football guy charge contact ----
+    for(const team of teams){
+      for(const unit of aliveUnits(team)){
+        if((unit.defKey==='football' || unit.defKey==='allinone') && unit.charging && unit.chargeTarget && unit.chargeTarget.alive){
+          const t = unit.chargeTarget;
+          if(dist(unit,t) < unit.r+t.r){
+            const dmg = DEFS.football.chargeDamage + (hasModifier(unit, 'tackle') ? unit.hp*0.1 : 0);
+            dealDamage(unit, t, dmg);
+            if(hasModifier(unit, 'tackle')) applyStun(t, 0.7);
+            if(hasModifier(unit, 'nfl')){
+              unit.statusResist = 1.3;
+              if(t.alive) applyKnockback(unit, t, {x:unit.vx*1.5,y:unit.vy*1.5});
+            }
+            log(`🏈 Football Guy bulldozes for ${dmg}!`, true);
+            endCharge(unit);
+          }
+        }
+      }
+    }
+
+    // ---- attacks & specials ----
+    for(const team of teams){
+      const enemy = otherTeam(team);
+      for(const unit of aliveUnits(team)){
+        const cooldownDt=dt*(unit.attackSpeedMultiplier||1);
+        unit.cdBlacksmith -= cooldownDt;
+        unit.cdAngry -= cooldownDt;
+        unit.cdHenchman -= cooldownDt;
+        unit.cdDrunk -= cooldownDt;
+        unit.cdManager -= cooldownDt;
+        unit.cdTraffic -= cooldownDt;
+        unit.cdPriest -= cooldownDt;
+        unit.cdFootball -= cooldownDt;
+        unit.cdChess -= cooldownDt;
+        unit.cdSentient -= cooldownDt;
+        unit.cdTripleT -= cooldownDt;
+        unit.cdGwnn -= cooldownDt;
+        unit.cdWoman -= cooldownDt;
+        unit.cdFireworks -= cooldownDt;
+        unit.cdChef -= cooldownDt;
+        unit.cdDetective -= cooldownDt;
+        unit.cdBlind -= cooldownDt;
+        unit.cdKnight -= cooldownDt;
+        unit.cdGhost -= cooldownDt;
+        unit.cdCamera -= cooldownDt;
+        unit.cdTired -= cooldownDt;
+        unit.cdBarbarian -= cooldownDt;
+        unit.cdBoxing -= cooldownDt;
+        unit.cdReferee -= cooldownDt;
+        unit.cdGardener -= cooldownDt;
+        if(unit.bleedTimer>0){
+          unit.bleedTimer -= dt;
+          unit.bleedTickTimer -= dt;
+          if(unit.bleedTickTimer<=0){
+            unit.bleedTickTimer = 0.5;
+            dealDamage(null, unit, unit.bleedDps*0.5, null, true);
+          }
+        }
+        if(unit.defKey==='boxing'){
+          unit.boxingIdleTimer = (unit.boxingIdleTimer||0) + dt;
+          unit.chainTimer = Math.max(0, (unit.chainTimer||0) - dt);
+        }
+        const wasRecording = unit.cameraRecording>0;
+        unit.cameraRecording=Math.max(0,unit.cameraRecording-dt);
+        if(wasRecording && unit.cameraRecording<=0 && unit.defKey==='camera' && hasModifier(unit,'photogenic')){
+          const enemyTeam = otherTeam(team);
+          const angle = unit.cameraRecordAngle||0;
+          unit.cameraFlash=0.15;
+          for(const victim of aliveUnits(enemyTeam)){
+            if(victim.defKey==='blind') continue;
+            if(inCone(unit,victim,angle,Math.PI/2,1120)){ dealDamage(unit,victim,DEFS.camera.flashDamage,null,true); applyStun(victim,0.6); }
+          }
+          log(`📸 Photogenic! Camera Guy fires another flash.`, true);
+        }
+        unit.cameraFlash=Math.max(0,unit.cameraFlash-dt);
+        unit.sleepyTimer=Math.max(0,unit.sleepyTimer-dt);
+        unit.sleepTimer=Math.max(0,unit.sleepTimer-dt);
+        unit.frenzyTimer=Math.max(0,unit.frenzyTimer-dt);
+        if(unit.frenzyTimer<=0) unit.frenzyStacks=0;
+        if(unit.swingTimer>0) unit.swingTimer=Math.max(0,unit.swingTimer-dt);
+        if(unit.gwnnReloading && unit.cdGwnn<=0) unit.gwnnReloading = false;
+        const target = nearestEnemy(unit, enemy);
+        if(unit.stunTimer>0 || unit.attackDisabled>0 || unit.sleepTimer>0) continue;
+
+        if(unit.defKey==='ghost'){
+          const inside=target && dist(unit,target)<target.r;
+          unit.ghostInside=!!inside;
+          unit.invincible=!!inside;
+          if(inside && unit.cdGhost<=0){
+            unit.cdGhost=DEFS.ghost.ghostInterval;
+            const damage=DEFS.ghost.ghostDamage+(hasModifier(unit,'nightmare')?unit.nightmareBonus:0);
+            dealDamage(unit,target,damage,null,true);
+            const prevTotal = unit.ghostDamageTotal||0;
+            unit.ghostDamageTotal = prevTotal + damage;
+            if(hasModifier(unit,'nightmare')){
+              const prevTier = Math.floor(prevTotal/100);
+              const newTier = Math.floor(unit.ghostDamageTotal/100);
+              if(newTier>prevTier) unit.nightmareBonus += 20*(newTier-prevTier);
+            }
+            if(hasModifier(unit,'fear')){
+              const prevTier = Math.floor(prevTotal/200);
+              const newTier = Math.floor(unit.ghostDamageTotal/200);
+              if(newTier>prevTier){
+                grantMovementSpeed(unit,0.15,1); grantMovementSpeed(target,0.15,1);
+              }
+            }
+            log(`👻 Ghost Guy attacks from inside!`, true);
+          }
+        }
+
+        if(unit.defKey==='camera' && target && unit.cdCamera<=0){
+          unit.cdCamera=DEFS.camera.cameraInterval;
+          const angle=Math.atan2(target.y-unit.y,target.x-unit.x);
+          unit.cameraFlash=0.15;
+          for(const victim of aliveUnits(enemy)){
+            if(victim.defKey==='blind') continue;
+            if(inCone(unit,victim,angle,Math.PI/2,1120)){ dealDamage(unit,victim,DEFS.camera.flashDamage,null,true); applyStun(victim,0.6); }
+          }
+          unit.cameraRecording=2;
+          unit.cameraRecordAngle=angle;
+          log(`📸 Camera Guy flashes a wide shot!`, true);
+        }
+        if(unit.defKey==='camera' && unit.cameraRecording>0){
+          // partial tracking: the cone slowly pans toward the target while
+          // recording instead of staying frozen at the flash angle (and instead
+          // of instantly snapping to full lock-on).
+          if(target){
+            const desiredAngle = Math.atan2(target.y-unit.y, target.x-unit.x);
+            const turnRate = 1.2; // radians/sec
+            let diff = desiredAngle - unit.cameraRecordAngle;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+            unit.cameraRecordAngle += clamp(diff, -turnRate*dt, turnRate*dt);
+          }
+          unit.cameraTick-=dt;
+          if(unit.cameraTick>0) continue;
+          unit.cameraTick=0.5;
+          const recordProgress = clamp(unit.cameraRecording/2, 0, 1);
+          const shrinkWidth = (Math.PI/3)*recordProgress;
+          const shrinkLength = 720;
+          for(const victim of aliveUnits(enemy)){
+            if(inCone(unit,victim,unit.cameraRecordAngle,shrinkWidth,shrinkLength)){ dealDamage(unit,victim,DEFS.camera.recordDamage,null,true); if(hasModifier(unit,'smile')) applyStun(victim,0.175); }
+          }
+        }
+
+        if(unit.defKey==='tired' && target && unit.cdTired<=0){
+          unit.cdTired=DEFS.tired.zzzInterval;
+          const count=DEFS.tired.zzzCount+(hasModifier(unit,'snoring')?1:0);
+          for(let z=0;z<count;z++){
+            const dx=target.x-unit.x,dy=target.y-unit.y,len=Math.hypot(dx,dy)||1;
+            projectiles.push({x:unit.x,y:unit.y,vx:dx/len*DEFS.tired.zzzSpeed,vy:dy/len*DEFS.tired.zzzSpeed,r:12,dmg:DEFS.tired.zzzDamage+(hasModifier(unit,'snoring')?10:0),team:team.id,owner:unit,kind:'zzz'});
+          }
+        }
+
+        // ---- batch 2 heroes ----
+        if(unit.hideTimer>0){ unit.hideTimer-=dt; if(unit.hideTimer<=0){ unit.hideTimer=0; addFloater(unit.x,unit.y-unit.r,'POOF!','#fff'); } }
+        const heal2=(h)=>{ unit.hp=Math.min(unit.maxhp,unit.hp+h); addFloater(unit.x,unit.y-unit.r-12,'+'+Math.round(h)+' HP','#8fffb0'); };
+        const shoot2=(em,dmg,spd,rad,fx)=>{
+          const a=Math.atan2(target.y-unit.y,target.x-unit.x);
+          projectiles.push({x:unit.x,y:unit.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:rad,dmg,team:team.id,owner:unit,kind:'pix',emoji:em,fx});
+        };
+        if(target && unit.hideTimer<=0){
+          const k=unit.defKey, nd=DEFS[k];
+          if(['vampire','frog','alien','magician','timeguy','magnet'].includes(k)){
+            unit.cd2=(unit.cd2===undefined?Math.random()*nd.fireRate:unit.cd2)-dt;
+            if(k==='vampire' && unit.cd2<=0 && dist(unit,target)-(unit.r+target.r)<=nd.meleeRange){
+              unit.cd2=nd.fireRate;
+              const dealt=dealDamage(unit,target,nd.damage,null,true);
+              if(dealt) heal2(nd.damage*(hasModifier(unit,'bloodthirst')?1:0.5));
+            }
+            if(k==='vampire' && hasModifier(unit,'batForm') && !unit.batUsed && unit.hp<unit.maxhp*0.4){
+              unit.batUsed=true; unit.hideTimer=2; unit.invincible=true; unit.invulnTimer=2;
+              addFloater(unit.x,unit.y-unit.r,'🦇','#fff');
+            }
+            if(k==='frog' && unit.cd2<=0){
+              unit.cd2=nd.fireRate;
+              const a=Math.atan2(unit.y-target.y,unit.x-target.x), pull=Math.max(0,dist(unit,target)-unit.r-target.r-10);
+              target.x+=Math.cos(a)*pull; target.y+=Math.sin(a)*pull;
+              dealDamage(unit,target,hasModifier(unit,'longTongue')?150:100,null,true);
+              if(hasModifier(unit,'sticky')) applyStun(target,0.6);
+              log('🐸 Frog Guy yanks his foe in!',true);
+            }
+            if(k==='alien' && unit.cd2<=0){
+              unit.cd2=nd.fireRate;
+              applyStun(target,1);
+              dealDamage(unit,target,nd.damage+(hasModifier(unit,'probe')?100:0),null,true);
+              if(hasModifier(unit,'warp')){ target.x=rand(BOX.left+80,BOX.right-80); target.y=rand(BOX.top+80,BOX.bottom-80); }
+              log('👽 Alien Guy abducts his foe!',true);
+            }
+            if(k==='magician' && unit.cd2<=0){
+              unit.cd2=nd.fireRate;
+              const M=MAGIC[Math.floor(Math.random()*MAGIC.length)];
+              const fs=hasModifier(unit,'finalShow');
+              shoot2(M.em,M.dmg,M.spd,12,fs?M.fx:null);
+              if(fs) addFloater(unit.x,unit.y-unit.r-14,M.name,'#ffd479');
+            }
+            if(k==='timeguy'){
+              unit.pixClock=(unit.pixClock||0)+dt; unit.rewindCd=(unit.rewindCd===undefined?8:unit.rewindCd)-dt;
+              unit.hist=unit.hist||[]; unit.hist.push({t:unit.pixClock,hp:unit.hp});
+              while(unit.hist.length&&unit.hist[0].t<unit.pixClock-3) unit.hist.shift();
+              if(unit.cd2<=0){ unit.cd2=nd.fireRate; shoot2('🔹',nd.damage,nd.projSpeed,9,null); }
+              if(unit.rewindCd<=0 && unit.hist.length){
+                unit.rewindCd=hasModifier(unit,'quick')?5:8;
+                const past=unit.hist[0].hp;
+                if(past>unit.hp){ heal2(past-unit.hp); log('⏳ Time Guy rewinds time!',true); }
+                if(hasModifier(unit,'timeStop')) applyStun(target,1.5);
+              }
+            }
+            if(k==='magnet'){
+              if(unit.cd2<=0){ unit.cd2=nd.fireRate; shoot2('🔩',nd.damage,nd.projSpeed,10,null); }
+              const R=hasModifier(unit,'strong')?420:230;
+              for(const p of projectiles){
+                if(p.team===team.id || p.magnetized || !['pix','zzz','nailPolish','gwnnBullet'].includes(p.kind)) continue;
+                if(Math.hypot(p.x-unit.x,p.y-unit.y)>R) continue;
+                const sp=Math.hypot(p.vx,p.vy)||400, a=Math.atan2(target.y-p.y,target.x-p.x);
+                p.vx=Math.cos(a)*sp; p.vy=Math.sin(a)*sp; p.team=team.id; p.owner=unit; p.magnetized=true; p.fx=null;
+                if(hasModifier(unit,'polarity')) p.dmg*=1.5;
+                addFloater(p.x,p.y-10,'REFLECT','#9de7ff');
+              }
+            }
+          }
+        }
+
+        if((unit.defKey==='pirate'||unit.defKey==='wizard'||unit.defKey==='ninja'||unit.defKey==='robot') && target){
+          const nd=DEFS[unit.defKey];
+          unit.cdPix=(unit.cdPix===undefined?Math.random()*nd.fireRate:unit.cdPix)-dt;
+          if(unit.cdPix<=0){
+            unit.cdPix=nd.fireRate;
+            const base=Math.atan2(target.y-unit.y,target.x-unit.x);
+            let n=1,spread=0,dmg=nd.damage,rad=12,em='💥';
+            if(unit.defKey==='pirate'){ em='⚫'; rad=14; if(hasModifier(unit,'broadside')){n=3;spread=0.25;dmg*=0.7;} }
+            if(unit.defKey==='wizard'){ em='🔥'; if(hasModifier(unit,'arcane')){n=2;spread=0.12;} }
+            if(unit.defKey==='ninja'){ em='✴️'; rad=9; n=hasModifier(unit,'twin')?5:3; spread=0.2; }
+            if(unit.defKey==='robot'){ em='🔸'; rad=7; dmg+=(unit.pixStacks||0)*0.3; }
+            for(let k=0;k<n;k++){
+              const a=base+(n>1?(k-(n-1)/2)*spread:0);
+              projectiles.push({x:unit.x,y:unit.y,vx:Math.cos(a)*nd.projSpeed,vy:Math.sin(a)*nd.projSpeed,r:rad,dmg,team:team.id,owner:unit,kind:'pix',emoji:em});
+            }
+          }
+        }
+
+        if(unit.defKey==='barbarian' && target && unit.cdBarbarian<=0 && dist(unit,target)-(unit.r+target.r)<=DEFS.barbarian.meleeRange){
+          const frenzyAtkMult = hasModifier(unit,'frenzy') && unit.frenzyTimer>0 ? 1+0.2*(unit.frenzyStacks||0) : 1;
+          unit.cdBarbarian=DEFS.barbarian.fireRate/frenzyAtkMult;
+          const tierDamage=[20,33,50,70,100][unit.weaponTier]+(hasModifier(unit,'trueRage')?unit.rageDamageBonus:0);
+          const hit=dealDamage(unit,target,tierDamage,null,true);
+          if(hit){
+            unit.rage += Math.max(5,Math.floor(tierDamage/20)*5) + (unit.weaponTier===3 ? 2 : 0);
+            if(hasModifier(unit,'trueRage') && unit.weaponTier===4) unit.rageDamageBonus += 1;
+            if(hasModifier(unit,'frenzy')){
+              unit.frenzyTimer=3;
+              unit.frenzyStacks=(unit.frenzyStacks||0)+1;
+            }
+            if(unit.rage>=([25,50,75,100][unit.weaponTier]||Infinity)){ unit.weaponTier=Math.min(4,unit.weaponTier+1); unit.rage=0; log(`🪓 Barbarian upgrades weapon!`,true); }
+          }
+        }
+
+        if(unit.defKey==='boxing' && target && unit.cdBoxing<=0 && dist(unit,target)-(unit.r+target.r)<=DEFS.boxing.meleeRange){
+          unit.cdBoxing = DEFS.boxing.fireRate;
+          const dB2 = DEFS.boxing;
+          const dy = target.y-unit.y;
+          const vertThreshold = (unit.r+target.r)*0.4;
+          let dmg, stunDur, forceMult, kind, floaterText;
+          if(dy < -vertThreshold){
+            dmg=dB2.uppercutDamage; stunDur=0.3; forceMult=2.4; kind='uppercut'; floaterText='UPPERCUT!';
+          } else if(dy > vertThreshold){
+            dmg=dB2.downDamage; stunDur=0.55; forceMult=0.7; kind='downward strike'; floaterText='SLAM!';
+          } else {
+            dmg=dB2.punchDamage; stunDur=0.2; forceMult=1; kind='punch'; floaterText='';
+          }
+          if(hasModifier(unit,'chaining') && unit.chainStacks>0) dmg += unit.chainStacks*10;
+          const strongBlowReady = hasModifier(unit,'strongBlow') && (unit.boxingIdleTimer||0) >= 3;
+          if(strongBlowReady) dmg += 25;
+          const hit=dealDamage(unit,target,dmg,null,false,forceMult);
+          if(hit){
+            unit.boxingIdleTimer = 0;
+            let extraStun = strongBlowReady ? 0.25 : 0;
+            applyStun(target, stunDur+extraStun);
+            unit.swingTimer=0.16;
+            unit.swingAngle=Math.atan2(target.y-unit.y,target.x-unit.x);
+            unit.swingKind='boxing';
+            if(hasModifier(unit,'chaining')){
+              if(unit.chainTimer>0) unit.chainStacks=Math.min(5,(unit.chainStacks||0)+1);
+              else unit.chainStacks=0;
+              unit.chainTimer=0.4;
+            }
+            if(strongBlowReady){
+              addFloater(target.x, target.y-target.r-20, 'STRONG BLOW!', '#ff5b5b');
+              log(`🥊 Boxing Guy lands a Strong Blow ${kind}!`, true);
+            } else if(floaterText){
+              addFloater(target.x, target.y-target.r-20, floaterText, '#ffb454');
+              log(`🥊 Boxing Guy lands a ${kind}!`, true);
+            } else {
+              log(`🥊 Boxing Guy lands a ${kind}!`, true);
+            }
+          }
+        }
+
+        if(unit.defKey==='referee' && target && unit.cdReferee<=0){
+          unit.cdReferee = DEFS.referee.cardInterval;
+          const dR = DEFS.referee;
+          const dx=target.x-unit.x, dy=target.y-unit.y, len=Math.hypot(dx,dy)||1;
+          projectiles.push({
+            x:unit.x, y:unit.y, vx:dx/len*dR.cardSpeed, vy:dy/len*dR.cardSpeed,
+            r:dR.cardR, dmg:dR.cardDamage, team:team.id, owner:unit, kind:'card'
+          });
+          log(`🟨 Referee Guy throws a card!`, true);
+        }
+
+        if(unit.defKey==='gardener' && target && unit.cdGardener<=0){
+          unit.cdGardener = DEFS.gardener.seedInterval;
+          const dG = DEFS.gardener;
+          const growTime = hasModifier(unit,'fertilizer') ? dG.growTime*0.6 : dG.growTime;
+          seeds.push({x:target.x, y:target.y, team:team.id, owner:unit, growTimer:growTime, maxGrow:growTime});
+          log(`🌱 Gardener Guy plants a seed!`, true);
+        }
+
+        if(unit.defKey==='detective'){
+          unit.crimeSceneTimer = Math.max(0,(unit.crimeSceneTimer||0)-dt);
+          if(unit.crimeSceneTimer<=0){ unit.detectiveSpeedBoost=0; unit.detectiveDamageBoost=0; }
+          if(hasModifier(unit,'spy') && target && dist(unit,target)<DEFS.detective.tapeRange && unit.cdDetective<=0){
+            unit.cdDetective=0.8;
+            dealDamage(unit,target,80,null,true);
+            log(`🔍 Detective Guy strikes with a magnifying glass!`, true);
+          }
+        }
+
+        if(unit.defKey==='blind'){
+          if(hasModifier(unit,'alert') && target && dist(unit,target)<=DEFS.blind.caneRange) unit.blindAlert=true;
+          if(unit.blindAlert && !unit.blindSwing){
+            unit.blindSwing=true;
+            unit.blindSwingTimer=0.18;
+            unit.swingTimer=0.18;
+            unit.swingKind='blind';
+            unit.blindAlert=false;
+            const swingTarget = target;
+            const swingAngle = swingTarget ? Math.atan2(swingTarget.y-unit.y,swingTarget.x-unit.x) : 0;
+            unit.blindSwingAngle = swingAngle;
+            unit.swingAngle = swingAngle;
+            for(const victim of aliveUnits(enemy)){
+              const distance=dist(unit,victim);
+              const angle=Math.atan2(victim.y-unit.y,victim.x-unit.x);
+              const delta=Math.atan2(Math.sin(angle-swingAngle),Math.cos(angle-swingAngle));
+              if(distance<=DEFS.blind.caneRange && Math.abs(delta)<=Math.PI*110/360){
+                dealDamage(unit,victim,DEFS.blind.caneDamage,null,true);
+              }
+            }
+            unit.blindSpeedBonus=(unit.blindSpeedBonus||0)+0.05;
+            log(`🦯 Blind Guy swings his cane!`, true);
+          }
+          if(unit.blindSwing){
+            unit.blindSwingTimer-=dt;
+            if(unit.blindSwingTimer<=0){
+              unit.blindSwing=false;
+              if(hasModifier(unit,'swiftCane') && target){
+                const dx=target.x-unit.x, dy=target.y-unit.y, len=Math.hypot(dx,dy)||1;
+                projectiles.push({x:unit.x,y:unit.y,vx:dx/len*DEFS.blind.caneRange*5,vy:dy/len*DEFS.blind.caneRange*5,
+                  r:12,dmg:55,team:team.id,owner:unit,kind:'caneSwing'});
+              }
+            }
+          }
+        }
+
+        if(unit.defKey==='knight' && target && unit.cdKnight<=0 && dist(unit,target)-(unit.r+target.r)<=DEFS.knight.meleeRange){
+          unit.cdKnight=DEFS.knight.fireRate;
+          unit.swingTimer=0.2;
+          unit.swingAngle=Math.atan2(target.y-unit.y,target.x-unit.x);
+          unit.swingKind='knight';
+          dealDamage(unit,target,DEFS.knight.damage);
+          log(`🛡️ Knight Guy swings!`, true);
+        }
+
+        if(unit.defKey==='gwnn'){
+          if(unit.gwnnBurstTimer>0){
+            unit.gwnnBurstTimer -= dt;
+            if(unit.gwnnShots>0 && target){
+              const direction = target.x>=unit.x ? 1 : -1;
+              const interval = (hasModifier(unit, 'gunslinger') ? 0.8 : 0.4) /
+                (hasModifier(unit, 'gunslinger') ? 12 : 6);
+              if(unit.gwnnBurstTimer <= (unit.gwnnShots===1 ? 0 : interval)){
+                projectiles.push({x:unit.x,y:unit.y,vx:direction*DEFS.gwnn.bulletSpeed,vy:0,r:DEFS.gwnn.bulletR,
+                  dmg:DEFS.gwnn.bulletDamage,team:team.id,owner:unit,kind:'gwnnBullet',horizontal:true});
+                unit.gwnnShots--;
+                unit.gwnnBurstTimer = interval;
+              }
+            }
+          } else if(!unit.gwnnReloading && unit.cdGwnn<=0 && target && Math.abs(target.y-unit.y)<unit.r+target.r+24){
+            unit.gwnnShots = DEFS.gwnn.bulletCount + (hasModifier(unit, 'gunslinger') ? 6 : 0);
+            unit.gwnnBurstTimer = (hasModifier(unit, 'gunslinger') ? 0.8 : 0.4);
+            unit.gwnnReloading = true;
+            unit.cdGwnn = DEFS.gwnn.reloadTime + (hasModifier(unit, 'gunslinger') ? 2 : 0);
+            log(`🔫 ${DEFS[unit.defKey].name} unloads a horizontal burst!`, true);
+          }
+        }
+
+        if(unit.defKey==='necromancer'){
+          unit.cdNecro -= dt;
+          const activeSkeletons = team.units.filter(u=>u.alive && u.defKey==='skeleton').length;
+          if(unit.cdNecro<=0 && activeSkeletons < DEFS.necromancer.maxSkeletons){
+            unit.cdNecro = DEFS.necromancer.skeletonInterval;
+            const count = Math.min(hasModifier(unit, 'liege') ? 2 : 1, DEFS.necromancer.maxSkeletons-activeSkeletons);
+            const necroTeam = team;
+            for(let i=0;i<count;i++){
+              const edge = Math.floor(rand(0,4));
+              const x = edge<2 ? (edge===0 ? BOX.left+28 : BOX.right-28) : rand(BOX.left+28,BOX.right-28);
+              const y = edge<2 ? rand(BOX.top+28,BOX.bottom-28) : (edge===2 ? BOX.top+28 : BOX.bottom-28);
+              const skeleton = makeUnit('skeleton', team.id, x, y, {});
+              skeleton.hp = DEFS.necromancer.skeletonHp + (hasModifier(unit, 'liege') ? 50 : 0);
+              skeleton.maxhp = skeleton.hp;
+              skeleton.armor = hasModifier(unit, 'liege') ? 10 : 0;
+              skeleton.ownerNecro = unit;
+              team.units.push(skeleton);
+            }
+            log(`💀 Necromancer summons ${count} skeleton${count>1?'s':''}!`, true);
+          }
+        }
+
+        if(unit.defKey==='skeleton'){
+          unit.cdSkeleton -= dt;
+          if(target && unit.cdSkeleton<=0 && dist(unit,target)-(unit.r+target.r)<=DEFS.skeleton.meleeRange){
+            unit.cdSkeleton = DEFS.skeleton.fireRate;
+            unit.swingTimer=0.2;
+            unit.swingAngle=Math.atan2(target.y-unit.y,target.x-unit.x);
+            unit.swingKind='skeleton';
+            dealDamage(unit, target, DEFS.necromancer.skeletonDamage);
+          }
+        }
+
+        if(unit.defKey==='woman'){
+          unit.womanStackTimer -= dt;
+          if(unit.womanStackTimer<=0) unit.womanStacks = 0;
+          if(target && unit.cdWoman<=0){
+            const speedFactor = 1 + Math.min(unit.womanStacks*0.12, 0.5);
+            unit.cdWoman = DEFS.woman.nailFireRate / speedFactor;
+            const dx=target.x-unit.x, dy=target.y-unit.y, len=Math.hypot(dx,dy)||1;
+            projectiles.push({x:unit.x,y:unit.y,vx:dx/len*DEFS.woman.nailSpeed,vy:dy/len*DEFS.woman.nailSpeed,
+              r:DEFS.woman.nailR,dmg:DEFS.woman.nailDamage,team:team.id,owner:unit,kind:'nailPolish'});
+          }
+        }
+
+        if(unit.defKey==='chef' && target && unit.cdChef<=0 && unit.activeKnives<DEFS.chef.maxKnives && unit.attackDisabled<=0){
+          unit.cdChef = DEFS.chef.knifeFireRate;
+          const dx=target.x-unit.x, dy=target.y-unit.y, len=Math.hypot(dx,dy)||1;
+          unit.activeKnives++;
+          projectiles.push({x:unit.x,y:unit.y,vx:dx/len*DEFS.chef.knifeSpeed,vy:dy/len*DEFS.chef.knifeSpeed,
+            r:DEFS.chef.knifeR,dmg:DEFS.chef.knifeDamage,team:team.id,owner:unit,kind:'knife',stuck:false});
+          log(`👨‍🍳 Chef Guy throws a knife!`, true);
+        }
+
+        if(unit.defKey==='blacksmith' || unit.defKey==='allinone'){
+          const dB = DEFS.blacksmith;
+          const gap = target ? dist(unit,target)-(unit.r+target.r) : Infinity;
+          const near = gap <= dB.nearRange;
+          if(!near || hasModifier(unit, 'multitasking')){
+            unit.forgeTimer += dt*(unit.attackSpeedMultiplier||1);
+            const forgeInterval = dB.forgeInterval * (hasModifier(unit, 'forgery') ? 0.8 : 1);
+            if(unit.forgeTimer >= forgeInterval){
+              unit.forgeTimer -= forgeInterval;
+              const forgeGain = dB.forgeGain + (hasModifier(unit, 'forgery') ? 5 : 0);
+              unit.forgeBonus += forgeGain;
+              forgeSparks.push({x:unit.x,y:unit.y- unit.r-8,life:0.45,maxLife:0.45});
+              addFloater(unit.x, unit.y-unit.r-6, `+${forgeGain} DMG`, '#ffcf6b');
+              log(`🔥 ${DEFS[unit.defKey].name} reforges — hammer damage now ${dB.damage+unit.forgeBonus}.`);
+            }
+          } else {
+            unit.forgeTimer = 0;
+          }
+          if(target && gap<=dB.meleeRange && unit.cdBlacksmith<=0 && unit.attackDisabled<=0){
+            const dmg = dB.damage + unit.forgeBonus;
+            unit.cdBlacksmith = dB.fireRate;
+            unit.swingTimer=0.2;
+            unit.swingAngle=Math.atan2(target.y-unit.y,target.x-unit.x);
+            unit.swingKind='blacksmith';
+            dealDamage(unit, target, dmg);
+          }
+        }
+
+        if(unit.defKey==='angry'){
+          const dA = DEFS.angry;
+          if(unit.anglingShots>0){
+            unit.anglingTimer -= dt;
+            if(unit.anglingTimer<=0 && target){
+              const dx=target.x-unit.x, dy=target.y-unit.y;
+              const len=Math.hypot(dx,dy)||1;
+              projectiles.push({x:unit.x,y:unit.y,vx:dx/len*dA.projSpeed*1.5,vy:dy/len*dA.projSpeed*1.5,r:7,dmg:25,team:team.id,owner:unit,kind:'miniMiddlefinger'});
+              unit.anglingShots -= 1;
+              unit.anglingTimer = 0.12;
+            }
+          }
+          if(target && unit.cdAngry<=0 && unit.attackDisabled<=0){
+            unit.cdAngry = dA.fireRate;
+            unit.invincible = true;
+            unit.invulnTimer = 0.2;
+            const dx=target.x-unit.x, dy=target.y-unit.y;
+            const len=Math.hypot(dx,dy)||1;
+            const isAngling = hasModifier(unit, 'anglings');
+            const dmg = isAngling ? 100 : Math.round(angryDamage(unit));
+            const rageMode = (unit.hp / unit.maxhp) < 0.25;
+            const projScale = rageMode ? 0.66 : 0.6;
+            projectiles.push({
+              x:unit.x,y:unit.y, vx:dx/len*dA.projSpeed*projScale, vy:dy/len*dA.projSpeed*projScale,
+              r:isAngling ? 16 : dA.projR, dmg, team:team.id, owner:unit, kind:isAngling ? 'angling' : 'middlefinger'
+            });
+            if(isAngling){ unit.anglingShots = 4; unit.anglingTimer = 0; }
+            addFloater(unit.x, unit.y-unit.r-10, `${dmg} DMG`, '#ff9a8d');
+            log(`😡 ${DEFS[unit.defKey].name} fires a middle finger for ${dmg}!`, true);
+          }
+        }
+
+        if(unit.defKey==='henchman' || unit.defKey==='allinone'){
+          const dH = DEFS.henchman;
+          const gap = target ? dist(unit,target)-(unit.r+target.r) : Infinity;
+          if(target && gap<=dH.meleeRange && unit.cdHenchman<=0 && unit.attackDisabled<=0 && unit.stunTimer<=0){
+            const crit = Math.random() < dH.critChance;
+            const dmg = crit ? dH.critDamage : dH.damage;
+            unit.cdHenchman = dH.fireRate;
+            const didHit = dealDamage(unit, target, dmg);
+            if(didHit && hasModifier(unit, 'goons')){
+              applyStun(target, target.stunTimer>0 ? 0.2 : 0.15, true);
+              addFloater(target.x, target.y-target.r-18, `STUN ${target.stunTimer.toFixed(2)}s`, '#ffe066');
+            }
+          }
+        }
+
+        if(unit.defKey==='drunk' || unit.defKey==='allinone'){
+          const dD = DEFS.drunk;
+          if(target && unit.cdDrunk<=0 && unit.attackDisabled<=0 && !unit.hammeredCutscene){
+            unit.cdDrunk = dD.fireRate;
+            const dx=target.x-unit.x, dy=target.y-unit.y;
+            const len=Math.hypot(dx,dy)||1;
+            const beerCount = unit.defKey==='drunk' && unit.frenzy ? 2 : 1;
+            for(let beerIndex=0;beerIndex<beerCount;beerIndex++){
+              const spread = beerCount===2 ? (beerIndex===0 ? -0.12 : 0.12) : 0;
+              const cos=Math.cos(spread), sin=Math.sin(spread);
+              projectiles.push({
+                x:unit.x,y:unit.y,
+                vx:(dx/len*cos-dy/len*sin)*dD.projSpeed,
+                vy:(dx/len*sin+dy/len*cos)*dD.projSpeed,
+                r:dD.projR, dmg:dD.damage, team:team.id, owner:unit,
+                kind:unit.frenzy ? 'glassbeer' : 'beer'
+              });
+            }
+          }
+        }
+
+        if(unit.defKey==='manager' || unit.defKey==='allinone'){
+          const dM = DEFS.manager;
+          if(target && unit.cdManager<=0 && unit.attackDisabled<=0){
+            unit.cdManager = dM.suitcaseFireRate * (unit.managerFastCase ? 0.23 : 1);
+            unit.managerFastCase = false;
+            const dx=target.x-unit.x, dy=target.y-unit.y;
+            const len=Math.hypot(dx,dy)||1;
+            projectiles.push({
+              x:unit.x,y:unit.y, vx:dx/len*dM.suitcaseSpeed, vy:dy/len*dM.suitcaseSpeed,
+              r:dM.suitcaseR, dmg:dM.suitcaseDamage, team:team.id, owner:unit,
+              kind:hasModifier(unit, 'boss') ? 'bossSuitcase' : 'suitcase'
+            });
+            log(`💼 ${DEFS[unit.defKey].name} flings a suitcase!`);
+          }
+        }
+
+        if(unit.defKey==='traffic' || unit.defKey==='allinone'){
+          const dT = DEFS.traffic;
+          if(target && unit.cdTraffic<=0){
+            unit.cdTraffic = dT.carInterval * (hasModifier(unit, 'highwaySpeeding') ? 0.75 : 1);
+            const dx=target.x-unit.x, dy=target.y-unit.y;
+            const len=Math.hypot(dx,dy)||1;
+            projectiles.push({
+              x:unit.x,y:unit.y, vx:dx/len*dT.carSpeed, vy:dy/len*dT.carSpeed,
+              r:dT.carR, dmg:dT.carDamage, team:team.id, owner:unit,
+              kind:'car', pierce:hasModifier(unit, 'crowdControl'), highway:hasModifier(unit, 'highwaySpeeding'), hitUnits:{}
+            });
+            log(`🚗 A car peels out toward the enemy!`, true);
+          }
+        }
+
+        if(unit.defKey==='priest' || unit.defKey==='allinone'){
+          const dP = DEFS.priest;
+          unit.popeTimer -= dt;
+          if(hasModifier(unit, 'pope') && unit.popeTimer<=0){
+            unit.popeTimer = 1;
+            for(const dir of chessPatternDirs('bishop')){
+              const angle = dir*Math.PI/180;
+              spawnDirectionalProjectile({
+                x:unit.x + Math.cos(angle)*(unit.r+18),
+                y:unit.y + Math.sin(angle)*(unit.r+18),
+                team:team.id, owner:unit, angle,
+                speed:DEFS.chess.bishopSpeed, r:13, dmg:DEFS.chess.bishopDamage, kind:'bishop'
+              });
+            }
+            log(`🙏 Pope summons four bishops!`, true);
+          }
+          if(target && unit.cdPriest<=0){
+            unit.cdPriest = dP.strikeInterval * (hasModifier(unit, 'pope') ? 1.2 : 1);
+            const dmg = Math.round(rand(dP.dmgMin, dP.dmgMax));
+            bolts.push({x1:unit.x,y1:unit.y,x2:target.x,y2:target.y,life:0.25});
+            const blessed = hasModifier(unit, 'blessed');
+            if(blessed){
+              for(const victim of aliveUnits(enemy)){
+                if(Math.hypot(victim.x-target.x, victim.y-target.y)<100){
+                  dealDamage(unit, victim, dmg, null, true);
+                  applyStun(victim, 0.5);
+                }
+              }
+            } else {
+              dealDamage(unit, target, dmg);
+            }
+            if(Math.random() < dP.healChance){
+              const heal = dmg*dP.healFrac;
+              unit.hp = Math.min(unit.maxhp, unit.hp+heal);
+              addFloater(unit.x, unit.y-unit.r-6, `+${Math.round(heal)} HP`, '#8fffb0');
+              log(`🙏 ${DEFS[unit.defKey].name} is blessed with ${Math.round(heal)} HP.`, true);
+            }
+          }
+        }
+
+        if(unit.defKey==='football' || unit.defKey==='allinone'){
+          const dF = DEFS.football;
+          if(unit.charging){
+            unit.chargeTime += dt;
+            if(!unit.chargeTarget || !unit.chargeTarget.alive || unit.chargeTime > 1.4){
+              endCharge(unit);
+            }
+          } else if(unit.cdFootball<=0 && target){
+            unit.charging = true;
+            unit.invincible = true;
+            unit.chargeTarget = target;
+            unit.chargeTime = 0;
+            const dx=target.x-unit.x, dy=target.y-unit.y;
+            const len=Math.hypot(dx,dy)||1;
+            unit.vx = dx/len*dF.chargeSpeed;
+            unit.vy = dy/len*dF.chargeSpeed;
+            unit.cdFootball = dF.chargeInterval * (hasModifier(unit, 'nfl') ? 0.56 : 1);
+            log(`🏈 ${DEFS[unit.defKey].name} locks on and charges!`, true);
+          }
+        }
+
+        if(unit.defKey==='chess' || unit.defKey==='allinone'){
+          const dC = DEFS.chess;
+          if(target && unit.cdChess<=0){
+            const sequence = ['pawn','knight','bishop','rook','queen'];
+            const phase = sequence[unit.chessStage % sequence.length];
+            unit.chessStage += 1;
+            unit.cdChess = dC.attackInterval * (hasModifier(unit, 'blitz') ? 0.67 : 1);
+
+            if(phase === 'pawn'){
+              for(const dir of chessPatternDirs('pawn')){
+                const angle = dir * Math.PI / 180;
+                const spawnX = unit.x + Math.cos(angle) * (unit.r + 18);
+                const spawnY = unit.y + Math.sin(angle) * (unit.r + 18);
+                spawnDirectionalProjectile({
+                  x: spawnX,
+                  y: spawnY,
+                  team: team.id,
+                  owner: unit,
+                  angle,
+                  speed: dC.pawnSpeed,
+                  r: 12,
+                  dmg: dC.pawnDamage,
+                  kind: 'pawn'
+                });
+              }
+            }
+
+            if(phase === 'knight'){
+              for(const dir of chessPatternDirs('knight')){
+                const angle = dir * Math.PI / 180;
+                const spawnX = unit.x + Math.cos(angle) * (unit.r + 18);
+                const spawnY = unit.y + Math.sin(angle) * (unit.r + 18);
+                spawnDirectionalProjectile({
+                  x: spawnX,
+                  y: spawnY,
+                  team: team.id,
+                  owner: unit,
+                  angle,
+                  speed: dC.knightSpeed,
+                  r: 14,
+                  dmg: dC.knightDamage,
+                  kind: 'knight',
+                  extra: { turnTimer: 0.35, lTurns: 0 }
+                });
+              }
+            }
+
+            if(phase === 'bishop'){
+              for(const dir of chessPatternDirs('bishop')){
+                const angle = dir * Math.PI / 180;
+                const spawnX = unit.x + Math.cos(angle) * (unit.r + 18);
+                const spawnY = unit.y + Math.sin(angle) * (unit.r + 18);
+                spawnDirectionalProjectile({
+                  x: spawnX,
+                  y: spawnY,
+                  team: team.id,
+                  owner: unit,
+                  angle,
+                  speed: dC.bishopSpeed,
+                  r: 13,
+                  dmg: dC.bishopDamage,
+                  kind: 'bishop'
+                });
+              }
+            }
+
+            if(phase === 'rook'){
+              for(const dir of chessPatternDirs('rook')){
+                const angle = dir * Math.PI / 180;
+                const spawnX = unit.x + Math.cos(angle) * (unit.r + 18);
+                const spawnY = unit.y + Math.sin(angle) * (unit.r + 18);
+                spawnDirectionalProjectile({
+                  x: spawnX,
+                  y: spawnY,
+                  team: team.id,
+                  owner: unit,
+                  angle,
+                  speed: dC.rookSpeed,
+                  r: 14,
+                  dmg: dC.rookDamage,
+                  kind: 'rook',
+                  extra: { knockout: true }
+                });
+              }
+            }
+
+            if(phase === 'queen'){
+              const dx = target.x - unit.x;
+              const dy = target.y - unit.y;
+              const snapAngle = snapToEightDirection(dx, dy);
+              const spawnX = unit.x + Math.cos(snapAngle) * (unit.r + 18);
+              const spawnY = unit.y + Math.sin(snapAngle) * (unit.r + 18);
+              spawnDirectionalProjectile({
+                x: spawnX,
+                y: spawnY,
+                team: team.id,
+                owner: unit,
+                angle: snapAngle,
+                speed: dC.queenSpeed,
+                r: 16,
+                dmg: dC.queenDamage,
+                kind: 'queen'
+              });
+            }
+
+            log(`♟️ ${DEFS[unit.defKey].name} unleashes ${phase}!`, true);
+          }
+        }
+
+        if(unit.defKey==='sentient' || unit.defKey==='allinone'){
+          const dS = DEFS.sentient;
+          if(target && unit.cdSentient<=0){
+            unit.cdSentient = dS.fireRate;
+            const dx = target.x - unit.x;
+            const dy = target.y - unit.y;
+            const snap = hasModifier(unit, 'omnidirectional') ? Math.atan2(dy, dx) : snapToEightDirection(dx, dy);
+            const speed = dS.projSpeed;
+            const spawnX = unit.x + Math.cos(snap) * (unit.r + 18);
+            const spawnY = unit.y + Math.sin(snap) * (unit.r + 18);
+            projectiles.push({
+              x: spawnX,
+              y: spawnY,
+              vx: Math.cos(snap) * speed,
+              vy: Math.sin(snap) * speed,
+              r: 10,
+              dmg: dS.dmg + (hasModifier(unit, 'stunlock') ? 20 : 0),
+              team: team.id,
+              owner: unit,
+              kind: 'sentient'
+            });
+            log(`🤖 ${DEFS[unit.defKey].name} fires on an 8-way vector.`, true);
+          }
+        }
+
+        if(unit.defKey==='tripleT' || unit.defKey==='allinone'){
+          const dTT = DEFS.tripleT;
+          if(unit.striking){
+            unit.strikeTimer += dt;
+            if(unit.strikeTimer >= dTT.windup){
+              const t = unit.strikeTarget;
+              const gap = (t && t.alive) ? dist(unit,t)-(unit.r+t.r) : Infinity;
+              if(t && t.alive && gap<=dTT.meleeRange){
+                if(unit.ascended){
+                  const dmg = Math.round(rand(dTT.ascDmgMin, dTT.ascDmgMax));
+                  dealDamage(unit, t, dmg);
+                  if(Math.random() < dTT.healChance){
+                    unit.hp = Math.min(unit.maxhp, unit.hp+dmg);
+                    addFloater(unit.x, unit.y-unit.r-18, `+${dmg} HP`, '#8fffb0');
+                    log(`✨ Ascended ${DEFS[unit.defKey].name} drains the blow back into health!`, true);
+                  }
+                } else {
+                  const dmg = Math.round(rand(dTT.dmgMin, dTT.dmgMax));
+                  dealDamage(unit, t, dmg, null, true);
+                }
+              }
+              unit.striking = false;
+              unit.cdTripleT = dTT.fireRate;
+            }
+          } else if(unit.cdTripleT<=0 && target){
+            const gap = dist(unit,target)-(unit.r+target.r);
+            if(gap<=dTT.meleeRange){
+              unit.striking = true;
+              unit.strikeTimer = 0;
+              unit.strikeTarget = target;
+            }
+          }
+
+          if(!unit.ascended && unit.hp <= unit.maxhp*dTT.ascendThreshold){
+            unit.ascended = true;
+            addFloater(unit.x, unit.y-unit.r-24, 'ASCENDED!', '#ffcf6b');
+            log(`🔥 ${DEFS[unit.defKey].name} ascends at half health — power surges!`, true);
+          }
+        }
+      }
+
+      // Henchmen team-wide spawn — keeps ticking even while none are currently on the field.
+      // The All-In-One Guy gets this too, growing his own little mob.
+      if(team.defKey==='henchman' || team.defKey==='allinone'){
+        team.spawnTimer += dt;
+        if(team.spawnTimer >= DEFS.henchman.spawnInterval){
+          team.spawnTimer -= DEFS.henchman.spawnInterval;
+          const maxCount = DEFS.henchman.maxCount + (team.modifiers.squadron ? 10 : 0);
+          if(team.spawnedCount < maxCount){
+            const remaining = maxCount - team.spawnedCount;
+            const batchSize = 3 + (team.modifiers.squadron ? 1 : 0);
+            const batch = Math.min(batchSize, remaining);
+            for(let i=0;i<batch;i++){
+              const src = aliveUnits(team)[0];
+              const baseX = src ? src.x : team.homeX;
+              const baseY = src ? src.y : team.homeY;
+              const ang = rand(0,Math.PI*2);
+              const nx = clamp(baseX + Math.cos(ang)*40, BOX.left+20, BOX.right-20);
+              const ny = clamp(baseY + Math.sin(ang)*40, BOX.top+20, BOX.bottom-20);
+              const nu = makeUnit('henchman', team.id, nx, ny, team.modifiers);
+              team.units.push(nu);
+              team.spawnedCount++;
+            }
+            log(`👊 Team ${team.id} mob grows — Henchman ${team.spawnedCount}/${DEFS.henchman.maxCount}.`, true);
+          }
+        }
+      }
+    }
+
+    for(const wall of tapeWalls){
+      wall.hitCooldown = Math.max(0,(wall.hitCooldown||0)-dt);
+      if(wall.hitCooldown>0) continue;
+      const dx=wall.x2-wall.x1, dy=wall.y2-wall.y1;
+      const len2=dx*dx+dy*dy||1;
+      const enemyTeam=teams.find(t=>t.id!==wall.owner.team);
+      for(const unit of aliveUnits(enemyTeam || {units:[]})){
+        const t=clamp(((unit.x-wall.x1)*dx+(unit.y-wall.y1)*dy)/len2,0,1);
+        const px=wall.x1+dx*t, py=wall.y1+dy*t;
+        if(Math.hypot(unit.x-px,unit.y-py)<unit.r+8){
+          const damage=DEFS.detective.tapeDamage*(1+(wall.owner.detectiveDamageBoost||wall.damageBoost||0));
+          dealDamage(wall.owner,unit,damage,null,true);
+          wall.hitCooldown=0.45;
+          break;
+        }
+      }
+    }
+
+    // ---- projectiles ----
+    for(let i=projectiles.length-1;i>=0;i--){
+      const p = projectiles[i];
+      if(p.hitUnits){
+        for(const id of Object.keys(p.hitUnits)){
+          if(p.hitUnits[id] !== Infinity) p.hitUnits[id] -= dt;
+        }
+      }
+      if(p.kind==='knife' && p.stuck){
+        if(p.stuckTarget && p.stuckTarget.alive){
+          p.x = p.stuckTarget.x + p.offsetX;
+          p.y = p.stuckTarget.y + p.offsetY;
+          if(p.preciseTimer>0){
+            p.preciseTimer -= dt;
+            p.damageTimer -= dt;
+            if(p.damageTimer<=0){ dealDamage(p.owner, p.stuckTarget, 20, null, true); p.damageTimer=1; }
+            if(p.preciseTimer<=0){ p.stuckTarget=null; }
+          }
+        }
+        if(p.owner && dist(p.owner,p)<p.owner.r+34){
+          if(p.stuckTarget && p.stuckTarget.alive && hasModifier(p.owner,'preciseCuts')) dealDamage(p.owner,p.stuckTarget,150,null,true);
+          if(hasModifier(p.owner,'cook')){
+            p.owner.hp=Math.min(p.owner.maxhp,p.owner.hp+10);
+            addFloater(p.owner.x,p.owner.y-p.owner.r-12,'+10 HP','#8fffb0');
+          }
+          p.owner.activeKnives=Math.max(0,p.owner.activeKnives-1);
+          projectiles.splice(i,1); continue;
+        }
+        continue;
+      }
+      if(p.kind==='firework' && !p.launched){
+        p.fuse -= dt;
+        if(p.fuse<=0){ p.launched=true; p.vx=p.dir.x*DEFS.fireworks.fireworkSpeed; p.vy=p.dir.y*DEFS.fireworks.fireworkSpeed; }
+        continue;
+      }
+      if(p.kind === 'knight' && p.turnTimer <= 0){
+        if(p.lTurns >= 1){
+          projectiles.splice(i,1);
+          continue;
+        }
+        const cos = Math.cos(Math.PI / 2), sin = Math.sin(Math.PI / 2);
+        const nx = p.vx * cos - p.vy * sin;
+        const ny = p.vx * sin + p.vy * cos;
+        p.vx = nx;
+        p.vy = ny;
+        p.lTurns += 1;
+        p.turnTimer = 0.38;
+      }
+      p.turnTimer = Math.max(0, (p.turnTimer || 0) - dt);
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      if(p.x<BOX.left||p.x>BOX.right||p.y<BOX.top||p.y>BOX.bottom){
+        if(p.kind==='firework'){
+          p.x=clamp(p.x,BOX.left,BOX.right); p.y=clamp(p.y,BOX.top,BOX.bottom);
+          explodeFirework(p); projectiles.splice(i,1); continue;
+        }
+        if(p.kind==='knife'){
+          p.x=clamp(p.x,BOX.left,BOX.right); p.y=clamp(p.y,BOX.top,BOX.bottom);
+          p.stuck=true; p.stuckTarget=null; log(`🔪 Chef knife sticks to the wall!`); continue;
+        }
+        if(p.kind==='nailPolish' && p.owner && !hasModifier(p.owner, 'skinCare')) p.owner.womanStacks = 0;
+        if(p.kind==='suitcase' || p.kind==='bossSuitcase' || p.kind==='bossBonus'){
+          spawnPapers(clamp(p.x,BOX.left,BOX.right), clamp(p.y,BOX.top,BOX.bottom), p.team, p.owner, p.kind==='bossSuitcase' ? 16 : 8);
+        }
+        if(p.kind==='glassbeer'){
+          spawnGlassSpikes(clamp(p.x,BOX.left,BOX.right), clamp(p.y,BOX.top,BOX.bottom), p.owner);
+        }
+        projectiles.splice(i,1); continue;
+      }
+      const enemyTeam = teams.find(t=>t.id!==p.team);
+      let hit=false;
+      for(const u of aliveUnits(enemyTeam)){
+        if(u.invincible) continue;
+        if(p.hitUnits && p.hitUnits[u.id] > 0) continue;
+        if(Math.hypot(u.x-p.x,u.y-p.y) < u.r+p.r){
+          if(u.defKey==='boxing' && Math.random() < boxingDodgeChance(u)){
+            const ddx=u.x-p.x, ddy=u.y-p.y, dlen=Math.hypot(ddx,ddy)||1;
+            const dnx=ddx/dlen, dny=ddy/dlen;
+            u.vx = dnx*260; u.vy = dny*260;
+            addFloater(u.x, u.y-u.r-16, 'DODGE!', '#9de7ff');
+            log(`🥊 Boxing Guy slips the hit!`, true);
+            continue;
+          }
+          const isCar = p.kind==='car';
+          const isTinyFinger = p.kind==='miniMiddlefinger';
+          if(p.kind==='card'){
+            const wasStunned = u.stunTimer>0;
+            const redCard = p.owner && hasModifier(p.owner,'redCard') && wasStunned;
+            const cardDmg = redCard ? p.dmg*2 : p.dmg;
+            const didCardHit=dealDamage(p.owner,u,cardDmg,{x:p.vx,y:p.vy},true);
+            if(didCardHit){
+              applyStun(u,0.4);
+              if(redCard) addFloater(u.x, u.y-u.r-16, 'RED CARD!', '#ff5b5b');
+              if(p.owner && hasModifier(p.owner,'yellowCard')){
+                u.refereeSlowStacks=Math.min(3,(u.refereeSlowStacks||0)+1);
+              }
+            }
+            hit=true; break;
+          }
+          if(p.kind==='zzz'){
+            const didSleepHit=dealDamage(p.owner,u,p.dmg,{x:p.vx,y:p.vy},true);
+            if(didSleepHit){
+              applyStun(u,0.15);
+              if(p.owner && hasModifier(p.owner,'sleepy')){
+                u.sleepyStacks=(u.sleepyStacks||0)+1;
+                if(u.sleepyStacks>=10){
+                  u.sleepTimer=0.5; u.sleepyStacks=0;
+                  u.speedMultiplier=(u.speedMultiplier||1)*0.8;
+                  u.attackSpeedMultiplier=(u.attackSpeedMultiplier||1)*0.9667;
+                  log(`😴 ${DEFS[u.defKey].name} falls asleep!`,true);
+                }
+              }
+            }
+            hit=true; break;
+          }
+          const didHit = dealDamage(p.owner, u, p.dmg, {x:p.vx,y:p.vy}, p.kind === 'rook' || isTinyFinger || isCar ? true : undefined);
+          if(p.kind === 'rook'){
+            applyKnockback(p.owner, u, {x:p.vx,y:p.vy});
+          }
+          if(isCar && p.pierce){
+            applyStun(u, 0.7);
+          }
+          if(isCar && p.highway){
+            applyKnockback(p.owner, u, {x:p.vx*1.5,y:p.vy*1.5});
+            u.vx *= 2.5;
+            u.vy *= 2.5;
+          }
+          if(p.kind==='suitcase' || p.kind==='bossSuitcase' || p.kind==='bossBonus'){
+            spawnPapers(p.x,p.y,p.team,p.owner, p.kind==='bossSuitcase' ? 16 : 8);
+          }
+          if(didHit && (p.kind==='suitcase' || p.kind==='bossSuitcase') && p.owner){
+            if(hasModifier(p.owner, 'sales')){
+              p.owner.hp = Math.min(p.owner.maxhp, p.owner.hp+50);
+              addFloater(p.owner.x, p.owner.owner?.r ? p.owner.y-p.owner.r-8 : p.owner.y-60, '+50 HP', '#8fffb0');
+              p.owner.managerFastCase = true;
+            }
+          }
+          if(didHit && p.owner && hasModifier(p.owner, 'boss') && (p.kind==='suitcase' || p.kind==='bossSuitcase' || p.kind==='bossBonus' || p.kind==='paper')){
+            p.owner.managerHits += 1;
+            if(p.owner.managerHits % 5 === 0){
+              const forward = Math.atan2(p.vy, p.vx);
+              for(let caseIndex=0;caseIndex<3;caseIndex++){
+                const spread = (caseIndex-1)*0.16;
+                projectiles.push({
+                  x:p.owner.x, y:p.owner.y,
+                  vx:Math.cos(forward+spread)*DEFS.manager.suitcaseSpeed,
+                  vy:Math.sin(forward+spread)*DEFS.manager.suitcaseSpeed,
+                  r:DEFS.manager.suitcaseR, dmg:DEFS.manager.suitcaseDamage,
+                  team:p.owner.team, owner:p.owner, kind:'bossBonus', hitUnits:{}
+                });
+              }
+              log(`💼 Boss launches 3 bonus briefcases!`, true);
+            }
+          }
+          if(p.kind==='pix' && didHit && p.fx) p.fx(p.owner,u);
+          if(p.kind==='pix' && didHit && p.owner && p.owner.defKey==='magician' && hasModifier(p.owner,'trick')){
+            p.owner.hideTimer=1; p.owner.invincible=true; p.owner.invulnTimer=1; addFloater(p.owner.x,p.owner.y-p.owner.r,'POOF!','#fff');
+          }
+          if(p.kind==='pix' && didHit && p.owner){
+            const o=p.owner, heal=(h)=>{o.hp=Math.min(o.maxhp,o.hp+h);addFloater(o.x,o.y-o.r-12,'+'+h+' HP','#8fffb0');};
+            if(o.defKey==='pirate'&&hasModifier(o,'plunder')) heal(20);
+            if(o.defKey==='wizard'&&hasModifier(o,'frostbite')) applyStun(u,0.3);
+            if(o.defKey==='ninja'&&hasModifier(o,'bloodlust')) heal(8);
+            if(o.defKey==='robot'){ if(hasModifier(o,'overclock')) o.pixStacks=(o.pixStacks||0)+1; if(hasModifier(o,'repair')) heal(3); }
+          }
+          if(p.kind==='glassbeer'){
+            spawnGlassSpikes(p.x, p.y, p.owner);
+          }
+          if(p.kind==='gwnnBullet' && p.owner && hasModifier(p.owner, 'deadshot')){
+            u.y = p.owner.y;
+            applyStun(u, 0.1);
+          }
+          if(p.kind==='nailPolish' && p.owner){
+            p.owner.womanStacks = Math.min(p.owner.womanStacks + 1, Math.ceil(0.5/0.12));
+            p.owner.womanStackTimer = hasModifier(p.owner, 'skinCare') ? 4 : 3;
+            if(hasModifier(p.owner, 'selfCare')){
+              p.owner.hp = Math.min(p.owner.maxhp, p.owner.hp+15);
+              addFloater(p.owner.x, p.owner.y-p.owner.r-16, '+15 HP', '#8fffb0');
+            }
+          }
+          if(p.kind==='knife'){
+            if(hasModifier(p.owner,'preciseCuts')){
+              p.stuck=true; p.stuckTarget=u; p.offsetX=p.x-u.x; p.offsetY=p.y-u.y;
+              p.preciseTimer=5; p.damageTimer=1;
+              log(`🔪 Chef knife sticks to the enemy!`);
+              hit=false; break;
+            }
+            p.owner.activeKnives=Math.max(0,p.owner.activeKnives-1);
+          }
+          if(p.kind==='firework'){
+            explodeFirework(p); hit=true; break;
+          }
+          if(p.kind==='beer' && didHit && p.owner && hasModifier(p.owner, 'sharing')){
+            p.owner.attackDisabled = 0.5;
+            scrambleDrunkMovement(p.owner);
+            log(`🍺 Sharing makes ${DEFS[p.owner.defKey].name} stagger after the hit!`);
+          }
+          if(isCar && p.pierce){
+            p.hitUnits[u.id] = p.highway ? 0.35 : Infinity;
+          } else {
+            hit=true;
+            break;
+          }
+        }
+      }
+      if(hit) projectiles.splice(i,1);
+    }
+
+    // ---- ping pong balls ----
+    updateBalls(dt);
+
+    // ---- glass spikes ----
+    for(let i=glassSpikes.length-1;i>=0;i--){
+      const spike = glassSpikes[i];
+      spike.life -= dt;
+      spike.hitTimer -= dt;
+      for(let projectileIndex=projectiles.length-1;projectileIndex>=0;projectileIndex--){
+        const projectile = projectiles[projectileIndex];
+        if(projectile.kind==='car' && Math.hypot(projectile.x-spike.x,projectile.y-spike.y)<spike.r+projectile.r){
+          projectiles.splice(projectileIndex,1);
+          addFloater(spike.x,spike.y,'POP!','#9de7ff');
+          log(`🛞 Glass shards pop a car tire!`, true);
+        }
+      }
+      if(spike.hitTimer<=0){
+        for(const team of teams){
+          for(const unit of aliveUnits(team)){
+            if(Math.hypot(unit.x-spike.x, unit.y-spike.y) < unit.r+18){
+              const spikeDamage = unit===spike.owner ? 12 : 20;
+              dealDamage(spike.owner, unit, spikeDamage, null, true);
+            }
+          }
+        }
+        spike.hitTimer = 0.5;
+      }
+      if(spike.life<=0) glassSpikes.splice(i,1);
+    }
+
+    for(let i=seeds.length-1;i>=0;i--){
+      const seed = seeds[i];
+      seed.growTimer -= dt;
+      if(seed.growTimer<=0){
+        const enemyTeam = teams.find(t=>t.id!==seed.team);
+        for(const victim of aliveUnits(enemyTeam)){
+          if(Math.hypot(victim.x-seed.x, victim.y-seed.y) < victim.r+DEFS.gardener.burstRadius){
+            dealDamage(seed.owner, victim, DEFS.gardener.burstDamage, null, true);
+            if(seed.owner && hasModifier(seed.owner,'thorns')){
+              victim.bleedTimer = Math.max(victim.bleedTimer, DEFS.gardener.bleedDuration);
+              victim.bleedDps = DEFS.gardener.bleedDps;
+              victim.bleedTickTimer = Math.min(victim.bleedTickTimer||0.5, 0.5);
+            }
+          }
+        }
+        addFloater(seed.x, seed.y, 'THORNS!', '#8fdb6f');
+        log(`🌱 A seed bursts into thorns!`, true);
+        seeds.splice(i,1);
+      }
+    }
+
+    // ---- floaters ----
+    for(let i=fireworkBursts.length-1;i>=0;i--){
+      fireworkBursts[i].life -= dt;
+      if(fireworkBursts[i].life<=0) fireworkBursts.splice(i,1);
+    }
+    for(let i=forgeSparks.length-1;i>=0;i--){
+      forgeSparks[i].life-=dt;
+      if(forgeSparks[i].life<=0) forgeSparks.splice(i,1);
+    }
+    for(let i=floaters.length-1;i>=0;i--){
+      const f = floaters[i];
+      f.y += f.vy*dt; f.life -= dt;
+      if(f.life<=0) floaters.splice(i,1);
+    }
+
+    // ---- lightning bolts ----
+    for(let i=bolts.length-1;i>=0;i--){
+      bolts[i].life -= dt;
+      if(bolts[i].life<=0) bolts.splice(i,1);
+    }
+
+    // ---- win check ----
+    if(gameMode==='timed') return;
+    const aDead = teamDefeated(teams[0]);
+    const bDead = teamDefeated(teams[1]);
+    if(aDead || bDead){
+      gameOver = true;
+      let winner = aDead ? teams[1] : teams[0];
+      if(aDead && bDead){
+        const burstWinner = teams.find(team => {
+          const leader = team.units.find(u => u.id === team.leaderId);
+          return leader && leader.defKey === 'exploding' && leader.bombTriggered && !leader.alive;
+        });
+        if(burstWinner) winner = burstWinner;
+      }
+      endGame(winner, aDead && bDead && !winner);
+    }
+  }
+
+  function updateBalls(dt){
+    const dPing = DEFS.pingpong;
+    for(const ball of pingBalls){
+      ball.x += ball.vx*dt;
+      ball.y += ball.vy*dt;
+
+      if(ball.x-ball.r < BOX.left){ ball.x=BOX.left+ball.r; ball.vx=Math.abs(ball.vx); }
+      if(ball.x+ball.r > BOX.right){ ball.x=BOX.right-ball.r; ball.vx=-Math.abs(ball.vx); }
+      if(ball.y-ball.r < BOX.top){ ball.y=BOX.top+ball.r; ball.vy=Math.abs(ball.vy); }
+      if(ball.y+ball.r > BOX.bottom){ ball.y=BOX.bottom-ball.r; ball.vy=-Math.abs(ball.vy); }
+
+      if(ball.hitCd>0) ball.hitCd -= dt;
+      if(ball.boostCd>0) ball.boostCd -= dt;
+
+      const enemyTeam = teams.find(t=>t.id!==ball.team);
+      if(enemyTeam){
+        for(const u of aliveUnits(enemyTeam)){
+          if(u.invincible) continue;
+          const dx=u.x-ball.x, dy=u.y-ball.y;
+          const dd = Math.hypot(dx,dy) || 0.0001;
+          if(dd < u.r+ball.r){
+            const nx=dx/dd, ny=dy/dd;
+            const vn = ball.vx*nx+ball.vy*ny;
+            ball.vx -= 2*vn*nx; ball.vy -= 2*vn*ny;
+            const overlap = (u.r+ball.r) - dd;
+            ball.x -= nx*overlap; ball.y -= ny*overlap;
+            if(ball.hitCd<=0){
+              const baseSpeed = dPing.ballSpeed;
+              const currentSpeed = Math.hypot(ball.vx, ball.vy);
+              const speedRatio = currentSpeed / baseSpeed;
+              const damage = ball.dmg + (hasModifier(ball.owner, 'deadlyVelocity') ? Math.max(0, speedRatio-1)*50 : 0);
+              dealDamage(ball.owner, u, damage, null, true);
+              if(hasModifier(ball.owner, 'deadlyVelocity')){
+                const knockbackScale = Math.max(1, speedRatio);
+                applyKnockback(ball.owner, u, {x:ball.vx*knockbackScale,y:ball.vy*knockbackScale});
+              } else {
+                applyKnockback(ball.owner, u, {x:ball.vx,y:ball.vy});
+              }
+              ball.hitCd = 0.35;
+            }
+            break;
+          }
+        }
+      }
+
+      if(ball.owner && ball.owner.alive && ball.boostCd<=0){
+        const dx=ball.owner.x-ball.x, dy=ball.owner.y-ball.y;
+        const dd = Math.hypot(dx,dy) || 0.0001;
+        if(dd < ball.owner.r+ball.r){
+          const nx=dx/dd, ny=dy/dd;
+          const vn = ball.vx*nx+ball.vy*ny;
+          ball.vx -= 2*vn*nx; ball.vy -= 2*vn*ny;
+          ball.vx *= dPing.ballSpeedMult; ball.vy *= dPing.ballSpeedMult;
+          const spd = Math.hypot(ball.vx,ball.vy);
+          const MAXSPD = 2400;
+          if(spd>MAXSPD){ ball.vx = ball.vx/spd*MAXSPD; ball.vy = ball.vy/spd*MAXSPD; }
+          ball.dmg += dPing.ballDmgGain;
+          ball.boostCd = dPing.boostCooldown;
+          if(hasModifier(ball.owner, 'masterPong')){
+            const target = nearestEnemy(ball.owner, teams.find(t=>t.id!==ball.team));
+            if(target){
+              const angle = Math.atan2(target.y-ball.y, target.x-ball.x);
+              const speed = Math.min(Math.hypot(ball.vx,ball.vy), 2400);
+              ball.vx = Math.cos(angle)*speed;
+              ball.vy = Math.sin(angle)*speed;
+            }
+            ball.owner.speedBoostTimer = 0.4;
+            ball.owner.invincible = true;
+            ball.owner.invulnTimer = Math.max(ball.owner.invulnTimer, 0.4);
+          }
+          addFloater(ball.owner.x, ball.owner.y-ball.owner.r-16, `SMASH! +${dPing.ballDmgGain} DMG`, '#8be9ff');
+          log(`🏓 Ping Pong Guy smashes the ball — now ${Math.round(ball.dmg)} dmg!`, true);
+        }
+      }
+    }
+  }
+
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  // ------------- render -------------
+  function render(){
+    ctx.setTransform(1/PIX,0,0,1/PIX,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // floor mat texture: soft center spotlight + faint grid
+    ctx.save();
+    const spot = ctx.createRadialGradient(canvas.width/2, canvas.height*0.4, 40, canvas.width/2, canvas.height*0.4, canvas.width*0.62);
+    spot.addColorStop(0, 'rgba(255,255,255,0.05)');
+    spot.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = spot;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    ctx.lineWidth = 1;
+    const gridStep = 40;
+    for(let gx=BOX.left; gx<=BOX.right; gx+=gridStep){
+      ctx.beginPath(); ctx.moveTo(gx,BOX.top); ctx.lineTo(gx,BOX.bottom); ctx.stroke();
+    }
+    for(let gy=BOX.top; gy<=BOX.bottom; gy+=gridStep){
+      ctx.beginPath(); ctx.moveTo(BOX.left,gy); ctx.lineTo(BOX.right,gy); ctx.stroke();
+    }
+    ctx.restore();
+
+    // arena border glow
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232,176,75,0.35)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(BOX.left,BOX.top,BOX.right-BOX.left,BOX.bottom-BOX.top);
+    ctx.restore();
+
+    for(const wall of tapeWalls){
+      ctx.save();
+      ctx.strokeStyle='#e85b5b';
+      ctx.shadowColor='#ff8a8a';
+      ctx.shadowBlur=10;
+      ctx.lineWidth=5;
+      ctx.setLineDash([10,6]);
+      ctx.beginPath();
+      ctx.moveTo(wall.x1,wall.y1);
+      ctx.lineTo(wall.x2,wall.y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    for(const team of teams){
+      for(const unit of team.units){
+        if(unit.alive && unit.defKey==='detective' && unit.detectiveTape){
+          ctx.save(); ctx.fillStyle='#ff7777'; ctx.shadowColor='#ff7777'; ctx.shadowBlur=10;
+          ctx.beginPath(); ctx.arc(unit.detectiveTape.x,unit.detectiveTape.y,7,0,Math.PI*2); ctx.fill(); ctx.restore();
+        }
+      }
+    }
+
+    // lightning bolts
+    for(const b of bolts){
+      const bc = b.color || '#c9a7ff';
+      ctx.globalAlpha = clamp(b.life/0.25,0,1);
+      ctx.strokeStyle = bc;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = bc;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(b.x1,b.y1);
+      ctx.lineTo(b.x2,b.y2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }
+
+    // projectiles
+    const PROJ_EMOJI = {beer:'🍺', suitcase:'💼', paper:'📄', car:'🚗', middlefinger:'🖕', firework:'🎇', knife:'🔪', zzz:'💤', card:'🟨'};
+    Object.assign(PROJ_EMOJI, {
+      sentient:'🤖',
+      gwnnBullet:'•',
+      nailPolish:'💅',
+      caneSwing:'🦯',
+      angling:'😡',
+      miniMiddlefinger:'🖕',
+      glassbeer:'🍻',
+      pawn:'♟️',
+      knight:'♞',
+      bishop:'♝',
+      rook:'♜',queen:'♛'
+    });
+    for(const burst of fireworkBursts){
+      const progress = 1 - burst.life/burst.maxLife;
+      const radius = 18 + progress*112;
+      ctx.save();
+      ctx.globalAlpha = clamp(burst.life/burst.maxLife,0,1);
+      ctx.strokeStyle = burst.sparks ? '#fff3a1' : '#ff9d45';
+      ctx.lineWidth = 5 - progress*3;
+      ctx.shadowColor = ctx.strokeStyle;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(burst.x, burst.y, radius, 0, Math.PI*2);
+      ctx.stroke();
+      for(let ray=0;ray<12;ray++){
+        const angle = ray*Math.PI*2/12;
+        const inner = radius*0.55;
+        const outer = radius + 14 + (ray%3)*8;
+        ctx.beginPath();
+        ctx.moveTo(burst.x+Math.cos(angle)*inner, burst.y+Math.sin(angle)*inner);
+        ctx.lineTo(burst.x+Math.cos(angle)*outer, burst.y+Math.sin(angle)*outer);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    for(const spike of glassSpikes){
+      ctx.save();
+      ctx.globalAlpha = clamp(spike.life/1.2,0,1);
+      ctx.fillStyle = '#9de7ff';
+      ctx.shadowColor = '#9de7ff';
+      ctx.shadowBlur = 12;
+      ctx.font = '22px serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('✦', spike.x, spike.y);
+      ctx.restore();
+    }
+    for(const seed of seeds){
+      const growProgress = 1 - clamp(seed.growTimer/seed.maxGrow, 0, 1);
+      ctx.save();
+      ctx.strokeStyle = '#8fdb6f';
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(seed.x, seed.y, DEFS.gardener.burstRadius*growProgress, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.font = `${18+growProgress*10}px serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🌱', seed.x, seed.y);
+      ctx.restore();
+    }
+    for(const p of projectiles){
+      if(p.emoji){
+        ctx.font=`${p.r*2.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(p.emoji,p.x,p.y); continue;
+      }
+      if(p.kind==='firework'){
+        ctx.save();
+        ctx.shadowColor = p.launched ? '#ff9d45' : '#fff3a1';
+        ctx.shadowBlur = p.launched ? 16 : 22;
+        ctx.globalAlpha = p.launched ? 1 : 0.75;
+        ctx.strokeStyle = p.launched ? '#ff9d45' : '#fff3a1';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        if(p.launched){
+          ctx.moveTo(p.x-p.vx*0.06,p.y-p.vy*0.06);
+          ctx.lineTo(p.x,p.y);
+        } else {
+          ctx.arc(p.x,p.y,p.r+5+Math.sin(performance.now()/90)*3,0,Math.PI*2);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+      if(p.kind==='pawn' || p.kind==='knight' || p.kind==='bishop' || p.kind==='rook' || p.kind==='queen'){
+        const chessColors = {pawn:'#f1c75b', knight:'#7bdff2', bishop:'#c9a7ff', rook:'#ff8f70', queen:'#ff6fae'};
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + 4, 0, Math.PI*2);
+        ctx.fillStyle = chessColors[p.kind];
+        ctx.globalAlpha = 0.28;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.font = `${p.r*2.2}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(PROJ_EMOJI[p.kind] || '🍺', p.x, p.y);
+    }
+
+    // ping pong balls
+    for(const ball of pingBalls){
+      ctx.font = `${ball.r*2.4}px serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🏓', ball.x, ball.y);
+    }
+
+    for(const spark of forgeSparks){
+      const progress=1-spark.life/spark.maxLife;
+      ctx.save();
+      ctx.globalAlpha=clamp(spark.life/spark.maxLife,0,1);
+      ctx.fillStyle='#ffcf6b';
+      ctx.shadowColor='#fff0a0';
+      ctx.shadowBlur=14;
+      for(let i=0;i<6;i++){
+        const angle=i*Math.PI/3;
+        const distance=8+progress*24;
+        ctx.beginPath();
+        ctx.arc(spark.x+Math.cos(angle)*distance,spark.y+Math.sin(angle)*distance,3,0,Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // units
+    for(const team of teams){
+      for(const u of team.units){
+        if(!u.alive || u.hideTimer>0) continue;
+        const d = DEFS[u.defKey];
+        if(u.swingTimer>0){
+          ctx.save();
+          const swingColors={blind:'#f0d28a',blacksmith:'#ffcf6b',skeleton:'#c9d0d8',knight:'#9dd7ff',boxing:'#ff8a5b'};
+          ctx.strokeStyle=swingColors[u.swingKind]||'#f0d28a';
+          ctx.shadowColor=ctx.strokeStyle;
+          ctx.shadowBlur=14;
+          ctx.lineWidth=8;
+          ctx.beginPath();
+          ctx.arc(u.x,u.y,u.r+22,u.swingAngle-Math.PI*110/360,u.swingAngle+Math.PI*110/360);
+          ctx.stroke();
+          ctx.restore();
+        }
+        if(u.defKey==='blind' && u.blindAlert){
+          ctx.font='bold 22px Rubik, sans-serif'; ctx.fillStyle='#fff2a6'; ctx.textAlign='center';
+          ctx.fillText('!',u.x,u.y-u.r-26);
+        }
+        const teamColor = team.id==='A' ? getCss('--teamA') : getCss('--teamB');
+        if(gameMode==='timed'){
+          ctx.font='bold 11px Rubik, sans-serif';
+          ctx.fillStyle='#ff8a5b';
+          ctx.textAlign='center';
+          ctx.fillText(`${Math.round(u.damageTaken||0)} dmg`,u.x,u.y+u.r+27);
+        }
+        if(u.defKey==='camera' && (u.cameraFlash>0 || u.cameraRecording>0)){
+          const cameraAngle=u.cameraRecordAngle||0;
+          const recordProgress=clamp(u.cameraRecording/2,0,1);
+          const coneLength=u.cameraFlash>0?1120:720;
+          const coneWidth=u.cameraFlash>0?Math.PI/2:(Math.PI/3)*recordProgress;
+          ctx.save();
+          ctx.globalAlpha=u.cameraFlash>0?0.22:0.12;
+          ctx.fillStyle=u.cameraFlash>0?'#fff2a6':'#e35b5b';
+          ctx.beginPath();
+          ctx.moveTo(u.x,u.y);
+          ctx.lineTo(u.x+Math.cos(cameraAngle-coneWidth/2)*coneLength,u.y+Math.sin(cameraAngle-coneWidth/2)*coneLength);
+          ctx.lineTo(u.x+Math.cos(cameraAngle+coneWidth/2)*coneLength,u.y+Math.sin(cameraAngle+coneWidth/2)*coneLength);
+          ctx.closePath(); ctx.fill(); ctx.restore();
+        }
+
+        // body glow ring
+        ctx.beginPath();
+        ctx.arc(u.x,u.y,u.r+3,0,Math.PI*2);
+        ctx.strokeStyle = (u.defKey==='angry' && u.hp/u.maxhp < 0.25) ? '#ff5a5a' : teamColor;
+        ctx.lineWidth = 2.4;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(u.x,u.y,u.r,0,Math.PI*2);
+        ctx.fillStyle = 'rgba(20,15,28,0.9)';
+        ctx.fill();
+
+        if(u.defKey==='tripleT'){
+          let sprite = TRIPLE_T_SPRITES.normal;
+          if(u.striking) sprite = TRIPLE_T_SPRITES.attack;
+          else if(u.ascended) sprite = TRIPLE_T_SPRITES.ascended;
+
+          if(sprite.complete && sprite.naturalWidth>0){
+            const size = u.r*2.15;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(u.x,u.y,u.r,0,Math.PI*2);
+            ctx.clip();
+            ctx.drawImage(sprite, u.x-size/2, u.y-size/2, size, size);
+            ctx.restore();
+          } else {
+            ctx.font = `${u.r*1.5}px serif`;
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText(d.emoji, u.x, u.y+1);
+          }
+        } else if(u.defKey==='allinone'){
+          // centerpiece: Ascended Triple T, everyone else's emoji orbiting around him
+          const sprite = TRIPLE_T_SPRITES.ascended;
+          const centerSize = u.r*1.25;
+          if(sprite.complete && sprite.naturalWidth>0){
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(u.x,u.y,u.r*0.6,0,Math.PI*2);
+            ctx.clip();
+            ctx.drawImage(sprite, u.x-centerSize/2, u.y-centerSize/2, centerSize, centerSize);
+            ctx.restore();
+          } else {
+            ctx.font = `${u.r*0.95}px serif`;
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('🔱', u.x, u.y+1);
+          }
+          const orbitR = u.r*0.86;
+          ctx.font = `${u.r*0.42}px serif`;
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ALLINONE_ORBIT_EMOJIS.forEach((em,i)=>{
+            const ang = (i/ALLINONE_ORBIT_EMOJIS.length)*Math.PI*2 - Math.PI/2;
+            ctx.fillText(em, u.x+Math.cos(ang)*orbitR, u.y+Math.sin(ang)*orbitR);
+          });
+        } else {
+          ctx.font = `${u.r*1.5}px serif`;
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(d.emoji, u.x, u.y+1);
+        }
+
+        // mini hp bar
+        const barW = u.r*2.2;
+        const hpFrac = clamp(u.hp/u.maxhp,0,1);
+        ctx.fillStyle='#241d30';
+        ctx.fillRect(u.x-barW/2, u.y-u.r-10, barW, 5);
+        ctx.fillStyle = team.id==='A' ? getCss('--teamA') : getCss('--teamB');
+        ctx.fillRect(u.x-barW/2, u.y-u.r-10, barW*hpFrac, 5);
+
+        if(u.defKey==='blacksmith' && u.forgeBonus>0){
+          ctx.font = '11px Rubik, sans-serif';
+          ctx.fillStyle = '#ffcf6b';
+          ctx.fillText(`+${u.forgeBonus}`, u.x, u.y-u.r-18);
+        }
+
+        if(u.defKey==='exploding' && u.bombArmed){
+          ctx.font = 'bold 12px Rubik, sans-serif';
+          ctx.fillStyle = '#ff8a5b';
+          ctx.fillText(`BOMB ${Math.max(0,u.bombTimer).toFixed(1)}s`, u.x, u.y-u.r-22);
+        }
+        if(u.defKey==='woman' && u.womanStacks>0){
+          ctx.font = '11px Rubik, sans-serif';
+          ctx.fillStyle = '#ff9fcf';
+          ctx.fillText(`+${u.womanStacks*12}%`, u.x, u.y-u.r-18);
+        }
+
+        if(u.hammeredCutscene){
+          ctx.font = '18px serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('🍺🍺🍺🍺🍺', u.x, u.y-u.r-24);
+        }
+
+        if(u.defKey==='tripleT' && u.ascended){
+          ctx.font = '11px Rubik, sans-serif';
+          ctx.fillStyle = '#ffcf6b';
+          ctx.fillText('ASCENDED', u.x, u.y+u.r+14);
+        }
+
+        if(u.defKey==='parry' && u.parryCd>0){
+          ctx.font = '10px Rubik, sans-serif';
+          ctx.fillStyle = getCss('--dim');
+          ctx.fillText(`parry ${u.parryCd.toFixed(1)}s`, u.x, u.y+u.r+14);
+        }
+
+        if(u.invincible){
+          ctx.beginPath();
+          ctx.arc(u.x,u.y,u.r+6,0,Math.PI*2);
+          ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5,4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+
+    // floaters
+    for(const f of floaters){
+      ctx.globalAlpha = clamp(f.life/0.9,0,1);
+      ctx.font = 'bold 13px Rubik, sans-serif';
+      ctx.fillStyle = f.color;
+      ctx.textAlign='center';
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha = 1;
+    }
+    ctx.setTransform(1,0,0,1,0,0);
+    screenCtx.imageSmoothingEnabled = false;
+    screenCtx.clearRect(0,0,canvas.width,canvas.height);
+    screenCtx.drawImage(lo,0,0,canvas.width,canvas.height);
+  }
+
+  function hpSummary(team){
+    const d = DEFS[team.defKey];
+    const aliveList = aliveUnits(team);
+    if(d.key==='allinone'){
+      const leader = team.units.find(u=>u.id===team.leaderId);
+      const hp = leader ? Math.max(0,leader.hp) : 0;
+      const max = leader ? leader.maxhp : d.maxhp;
+      const mobCount = aliveList.filter(u=>u.id!==team.leaderId).length;
+      const sub = mobCount>0
+        ? `${Math.round(hp)} / ${max} HP · +${mobCount} henchmen`
+        : `${Math.round(hp)} / ${max} HP`;
+      return {hp, max, sub};
+    }
+    const hp = aliveList.reduce((s,u)=>s+u.hp,0);
+    const max = team.units.reduce((s,u)=>s+u.maxhp,0) || d.maxhp;
+    const sub = d.key==='henchman'
+      ? `${aliveList.length} alive / ${team.spawnedCount} spawned`
+      : `${Math.max(0,Math.round(hp))} / ${max} HP`;
+    return {hp, max, sub};
+  }
+
+  function updateHpUI(){
+    const dA = DEFS[teams[0].defKey], dB = DEFS[teams[1].defKey];
+    const sumA = hpSummary(teams[0]);
+    const sumB = hpSummary(teams[1]);
+
+    document.getElementById('hpNameA').innerHTML = `${dA.emoji} ${dA.name}`;
+    document.getElementById('hpNameB').innerHTML = `${dB.name} ${dB.emoji}`;
+    document.getElementById('hpBarA').style.width = clamp(sumA.hp/sumA.max*100,0,100)+'%';
+    document.getElementById('hpBarB').style.width = clamp(sumB.hp/sumB.max*100,0,100)+'%';
+
+    document.getElementById('hpSubA').textContent = sumA.sub;
+    document.getElementById('hpSubB').textContent = sumB.sub;
+    const timer=document.getElementById('modeTimer');
+    timer.style.display=gameMode==='timed'?'block':'none';
+    timer.textContent=gameMode==='timed' ? `TIME ${Math.ceil(modeTimeRemaining)}s` : '';
+  }
+
+  function endTimedGame(){
+    gameOver=true;
+    const damageA=teams[0].units.reduce((sum,unit)=>sum+(unit.damageTaken||0),0);
+    const damageB=teams[1].units.reduce((sum,unit)=>sum+(unit.damageTaken||0),0);
+    const winner=damageA<damageB?teams[0]:damageB<damageA?teams[1]:null;
+    const overlay=document.getElementById('overlay');
+    document.getElementById('overlayTitle').textContent=winner?`⏱️ Team ${winner.id} Wins!`:'⏱️ Timed Draw';
+    document.getElementById('overlaySub').textContent=`Damage taken: Blue ${Math.round(damageA)} · Red ${Math.round(damageB)}`;
+    overlay.style.display='flex';
+    log(`⏱️ Timed mode ends — Blue ${Math.round(damageA)} vs Red ${Math.round(damageB)} damage taken.`,true);
+  }
+
+  let simSpeed=1;
+  function loop(ts){
+    if(lastTs===null) lastTs=ts;
+    const dt = Math.min((ts-lastTs)/1000, 0.033);
+    lastTs = ts;
+    for(let i=0;i<simSpeed;i++) update(dt);
+    render(); 
+    updateHpUI();
+    updateArenaHover();
+    if(!gameOver) rafId = requestAnimationFrame(loop);
+  }
+
+  function endGame(winnerTeam, draw){
+    const overlay = document.getElementById('overlay');
+    if(!winnerTeam){
+      document.getElementById('overlayTitle').textContent = 'Double KO';
+      document.getElementById('overlaySub').textContent = 'Both fighters went down together.';
+      overlay.style.display='flex';
+      log('⚔️ Both teams fell — a draw!', true);
+      return;
+    }
+    const d = DEFS[winnerTeam.defKey];
+    document.getElementById('overlayTitle').textContent = `${d.emoji} Team ${winnerTeam.id} Wins!`;
+    document.getElementById('overlaySub').textContent = `${d.name} is left standing.`;
+    overlay.style.display='flex';
+    log(`🏆 ${d.name} (Team ${winnerTeam.id}) wins the brawl!`, true);
+  }
+
+  // ------------- setup / lifecycle -------------
+  function startBattle(){
+    gameMode=modeSelect.value;
+    modeTimeRemaining=20;
+    teams = [
+      makeTeam(selA, 'A', BOX.left+90, (BOX.top+BOX.bottom)/2 + rand(-60,60), selectedModsA, Number(countASelect.value)),
+      makeTeam(selB, 'B', BOX.right-90, (BOX.top+BOX.bottom)/2 + rand(-60,60), selectedModsB, Number(countBSelect.value))
+    ];
+    projectiles = [];
+    floaters = [];
+    bolts = [];
+    pingBalls = [];
+    glassSpikes = [];
+    seeds = [];
+    fireworkBursts = [];
+    tapeWalls = [];
+    forgeSparks = [];
+    gameOver = false;
+    paused = false;
+    lastTs = null;
+    logEl.innerHTML = '';
+    document.getElementById('overlay').style.display='none';
+    document.getElementById('pauseOverlay').style.display='none';
+    log(`⚔️ ${DEFS[selA].name} (Blue) vs ${DEFS[selB].name} (Red) — fight!`, true);
+
+    for(const team of teams){
+      const leader = team.units.find(u=>u.id===team.leaderId);
+      if(leader && leader.defKey==='exploding' && hasModifier(leader, 'tickTock')) armBomb(leader);
+      if(leader && (leader.defKey==='pingpong' || leader.defKey==='allinone')){
+        const dp = DEFS.pingpong;
+        const ang = rand(0,Math.PI*2);
+        pingBalls.push({
+          x: leader.x, y: leader.y,
+          vx: Math.cos(ang)*dp.ballSpeed, vy: Math.sin(ang)*dp.ballSpeed,
+          r: dp.ballR, dmg: dp.ballDmg,
+          team: team.id, owner: leader,
+          hitCd: 0, boostCd: 0.5
+        });
+      }
+    }
+
+    document.getElementById('setup').style.display='none';
+    document.getElementById('arenaScreen').style.display='block';
+
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  document.querySelectorAll('#speedBar button').forEach(b=>b.addEventListener('click',()=>{
+    simSpeed=Number(b.dataset.s);
+    document.querySelectorAll('#speedBar button').forEach(x=>x.classList.toggle('on',x===b));
+  }));
+  document.getElementById('startBtn').addEventListener('click', startBattle);
+  document.getElementById('rematchBtn').addEventListener('click', startBattle);
+  document.getElementById('changeBtn').addEventListener('click', ()=>{
+    if(rafId) cancelAnimationFrame(rafId);
+    paused = false;
+    hideTooltip();
+    arenaMouse = null; hoveredArenaUnit = null;
+    document.getElementById('pauseOverlay').style.display='none';
+    document.getElementById('arenaScreen').style.display='none';
+    document.getElementById('setup').style.display='flex';
+  });
+
+  function togglePause(){
+    if(gameOver || document.getElementById('arenaScreen').style.display==='none') return;
+    paused = !paused;
+    document.getElementById('pauseOverlay').style.display = paused ? 'flex' : 'none';
+  }
+
+  document.getElementById('resumeBtn').addEventListener('click', togglePause);
+  document.getElementById('pauseRematchBtn').addEventListener('click', startBattle);
+  document.getElementById('pauseChangeBtn').addEventListener('click', ()=>{
+    if(rafId) cancelAnimationFrame(rafId);
+    paused = false;
+    hideTooltip();
+    arenaMouse = null; hoveredArenaUnit = null;
+    document.getElementById('pauseOverlay').style.display='none';
+    document.getElementById('arenaScreen').style.display='none';
+    document.getElementById('setup').style.display='flex';
+  });
+  document.addEventListener('keydown', event=>{
+    if(event.key==='Escape'){
+      event.preventDefault();
+      togglePause();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
